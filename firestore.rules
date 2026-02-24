@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection - users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if true; // Allow all for now, implement auth later
+    }
+    
+    // Classes collection - readable by all, writable by admin
+    match /classes/{classId} {
+      allow read: if true;
+      allow write: if true; // Allow all for now, implement admin check later
+    }
+    
+    // Bookings collection - users can read/write their own bookings
+    match /bookings/{bookingId} {
+      allow read, write: if true; // Allow all for now, implement user check later
+    }
+  }
+}
