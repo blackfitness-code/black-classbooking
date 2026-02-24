@@ -97,8 +97,21 @@
                 <p class="text-sm text-gray-600">
                   จอง: {{ yogaClass.currentBookings }}/{{ yogaClass.maxCapacity }}
                 </p>
+                <p v-if="yogaClass.description" class="text-sm text-gray-500 mt-2 italic">
+                  {{ yogaClass.description }}
+                </p>
               </div>
               <div class="flex space-x-2">
+                <button
+                  @click="$router.push(`/class/${yogaClass.id}`)"
+                  class="text-purple-500 hover:text-purple-700"
+                  title="ดูรายละเอียด"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                </button>
                 <button
                   @click="editClass(yogaClass)"
                   class="text-blue-500 hover:text-blue-700"
@@ -498,13 +511,18 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">ชื่อคลาส</label>
-            <input
-              v-model="editingClass.name"
-              type="text"
+            <label class="block text-sm font-medium mb-1">คลาส</label>
+            <select
+              v-model="editingClass.subtype"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
+              <option value="" disabled>เลือกคลาส</option>
+              <option v-for="subtype in editAvailableSubtypes" :key="subtype.value" :value="subtype.value">
+                {{ subtype.label }}
+              </option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">ชื่อและรายละเอียดจะถูกกำหนดอัตโนมัติตามคลาสที่เลือก</p>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">วันที่</label>
@@ -581,13 +599,18 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">ชื่อคลาส</label>
-            <input
-              v-model="newClass.name"
-              type="text"
+            <label class="block text-sm font-medium mb-1">คลาส</label>
+            <select
+              v-model="newClass.subtype"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
+              <option value="" disabled>เลือกคลาส</option>
+              <option v-for="subtype in availableSubtypes" :key="subtype.value" :value="subtype.value">
+                {{ subtype.label }}
+              </option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">ชื่อและรายละเอียดจะถูกกำหนดอัตโนมัติตามคลาสที่เลือก</p>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">วันที่</label>
@@ -625,16 +648,6 @@
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">URL รูปภาพคลาส (ไม่บังคับ)</label>
-            <input
-              v-model="newClass.imageUrl"
-              type="url"
-              placeholder="https://example.com/image.jpg"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-            <p class="text-xs text-gray-500 mt-1">ใส่ URL รูปภาพจากอินเทอร์เน็ต</p>
           </div>
           <div class="flex space-x-3">
             <button
@@ -684,7 +697,7 @@ import { format, addDays } from 'date-fns'
 import { th } from 'date-fns/locale'
 import Swal from 'sweetalert2'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
-import { CLASS_TYPES, getClassTypeInfo, getClassTypeColor } from '../constants/classTypes'
+import { CLASS_TYPES, getClassTypeInfo, getClassTypeColor, getClassSubtypes, getClassSubtypeInfo } from '../constants/classTypes'
 
 const authStore = useAuthStore()
 
@@ -719,12 +732,31 @@ const editingClass = ref(null)
 const showAddClassModal = ref(false)
 const addingClass = ref(false)
 const newClass = ref({
-  name: '',
   type: 'yoga',
+  subtype: '',
   date: '',
   time: '',
   instructor: '',
   maxCapacity: 10
+})
+
+const availableSubtypes = computed(() => {
+  return getClassSubtypes(newClass.value.type)
+})
+
+const editAvailableSubtypes = computed(() => {
+  return editingClass.value ? getClassSubtypes(editingClass.value.type) : []
+})
+
+// Watch for type change to reset subtype
+watch(() => newClass.value.type, (newType) => {
+  newClass.value.subtype = ''
+})
+
+watch(() => editingClass.value?.type, (newType) => {
+  if (editingClass.value) {
+    editingClass.value.subtype = ''
+  }
 })
 
 const formatDate = (dateString) => {
@@ -1085,9 +1117,22 @@ const updateClass = async () => {
   
   addingClass.value = true
   try {
-    const { id, ...classData } = editingClass.value
+    // Get class info from subtype
+    const subtypeInfo = getClassSubtypeInfo(editingClass.value.type, editingClass.value.subtype)
+    if (!subtypeInfo) {
+      throw new Error('ไม่พบข้อมูลคลาส')
+    }
+    
+    const { id } = editingClass.value
     await updateDoc(doc(db, 'classes', id), {
-      ...classData,
+      type: editingClass.value.type,
+      subtype: editingClass.value.subtype,
+      name: subtypeInfo.label,
+      description: subtypeInfo.description,
+      date: editingClass.value.date,
+      time: editingClass.value.time,
+      instructor: editingClass.value.instructor,
+      maxCapacity: editingClass.value.maxCapacity,
       updatedAt: new Date()
     })
     
@@ -1117,16 +1162,29 @@ const updateClass = async () => {
 const addClass = async () => {
   addingClass.value = true
   try {
+    // Get class info from subtype
+    const subtypeInfo = getClassSubtypeInfo(newClass.value.type, newClass.value.subtype)
+    if (!subtypeInfo) {
+      throw new Error('ไม่พบข้อมูลคลาส')
+    }
+    
     await addDoc(collection(db, 'classes'), {
-      ...newClass.value,
+      type: newClass.value.type,
+      subtype: newClass.value.subtype,
+      name: subtypeInfo.label,
+      description: subtypeInfo.description,
+      date: newClass.value.date,
+      time: newClass.value.time,
+      instructor: newClass.value.instructor,
+      maxCapacity: newClass.value.maxCapacity,
       currentBookings: 0,
       createdAt: new Date()
     })
     
     // Reset form
     newClass.value = {
-      name: '',
       type: 'yoga',
+      subtype: '',
       date: '',
       time: '',
       instructor: '',

@@ -158,7 +158,7 @@
           </div>
         </div>
 
-        <!-- Admin Menu -->
+        <!-- Admin Menu
         <div v-if="authStore.isAdmin" class="mt-6">
           <router-link to="/admin" class="block">
             <div class="card hover:shadow-md transition-all border-2 border-orange-100">
@@ -178,7 +178,7 @@
               </div>
             </div>
           </router-link>
-        </div>
+        </div> -->
       </div>
     </main>
     

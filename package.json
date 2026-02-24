@@ -11,5 +11,8 @@
   "devDependencies": {
     "baseline-browser-mapping": "^2.10.0",
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "vite": "^7.3.1"
   }
 }

@@ -94,6 +94,11 @@
                   </svg>
                   ครู {{ yogaClass.instructor }}
                 </div>
+                
+                <!-- Class Description -->
+                <div v-if="yogaClass.description" class="mt-3 pt-3 border-t border-gray-100">
+                  <p class="text-sm text-gray-600 leading-relaxed">{{ yogaClass.description }}</p>
+                </div>
               </div>
               <div class="text-right ml-4">
                 <div class="text-sm text-gray-500 mb-2">
@@ -123,6 +128,13 @@
               ]"
             >
               {{ getBookingButtonText(yogaClass) }}
+            </button>
+            
+            <button
+              @click="$router.push(`/class/${yogaClass.id}`)"
+              class="w-full py-2 px-4 rounded-xl font-medium transition-all bg-white border-2 border-primary text-primary hover:bg-primary/5 mt-2"
+            >
+              ดูรายละเอียด
             </button>
           </div>
         </div>
@@ -162,6 +174,10 @@
               <span class="text-gray-600">ครู:</span>
               <span class="font-medium">{{ selectedClass.instructor }}</span>
             </div>
+            <div v-if="selectedClass.description" class="pt-2 border-t border-gray-200">
+              <span class="text-gray-600 text-sm block mb-1">รายละเอียด:</span>
+              <p class="text-sm text-gray-700">{{ selectedClass.description }}</p>
+            </div>
           </div>
         </div>
         
@@ -195,7 +211,7 @@ import { format, addDays, startOfDay } from 'date-fns'
 import { th } from 'date-fns/locale'
 import Swal from 'sweetalert2'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
-import { getClassTypeInfo, getClassTypeColor } from '../constants/classTypes'
+import { getClassTypeInfo, getClassTypeColor, getClassSubtypeInfo } from '../constants/classTypes'
 
 const authStore = useAuthStore()
 const liffStore = useLiffStore()

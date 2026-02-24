@@ -7,8 +7,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#00B900',
-        secondary: '#06C755'
+        primary: '#b97e00ff',
+        secondary: '#000000ff'
       },
       fontFamily: {
         'sans': ['Kanit', 'Noto Sans Thai', 'sans-serif'],

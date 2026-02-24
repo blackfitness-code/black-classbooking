@@ -20,6 +20,12 @@ const routes = [
         meta: { requiresAuth: true, requiresProfile: true }
     },
     {
+        path: '/class/:id',
+        name: 'ClassDetail',
+        component: () => import('../views/ClassDetail.vue'),
+        meta: { requiresAuth: true, requiresProfile: true }
+    },
+    {
         path: '/history',
         name: 'History',
         component: () => import('../views/History.vue'),
