@@ -1,7 +1,17 @@
 // ประเภทคลาสออกกำลังกายที่รองรับ
 export const CLASS_TYPES = [
-  { value: 'yoga', label: 'โยคะ', icon: '🧘', color: 'purple' },
-  { value: 'dance', label: 'เต้น', icon: '💃', color: 'blue' }
+  {
+    value: 'yoga',
+    label: 'Yoga',
+    iconPath: 'M12 2C10.9 2 10 2.9 10 4s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-1 17.93c-2.76-.3-5-2.54-5.3-5.3-.3-2.76 1.47-5.3 4.2-5.9v2.02c-1.7.6-2.9 2.2-2.9 4.05 0 2.48 2.02 4.5 4.5 4.5.85 0 1.64-.22 2.33-.6l1.42 1.42c-1.11.64-2.4 1.01-3.75 1.01-1.31 0-2.54-.33-3.61-.9zm7.91-5.63c-.3 2.76-2.54 5-5.3 5.3v-2.02c1.7-.6 2.9-2.2 2.9-4.05 0-2.48-2.02-4.5-4.5-4.5-.85 0-1.64.22-2.33.6L7.26 7.21c1.11-.64 2.4-1.01 3.75-1.01 4.14 0 7.5 3.36 7.5 7.5 0 .4-.03.79-.09 1.17z',
+    color: 'black'
+  },
+  {
+    value: 'dancing',
+    label: 'Dancing',
+    iconPath: 'M12 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm9 7h-6v13h-2v-6h-2v6H9V9H3V7h18v2z',
+    color: 'black'
+  }
 ]
 
 // คลาสย่อยของแต่ละประเภท พร้อม description ที่แก้ไขไม่ได้
@@ -28,7 +38,7 @@ export const CLASS_SUBTYPES = {
       description: 'โยคะสไตล์อัษฏางคะที่เน้นการเคลื่อนไหวอย่างต่อเนื่องและมีพลัง ผสมผสานการหายใจกับท่าทางที่เป็นลำดับ เหมาะสำหรับผู้ที่ต้องการความท้าทาย'
     }
   ],
-  dance: [
+  dancing: [
     {
       value: 'easy-dance',
       label: 'Easy Dance',
@@ -88,8 +98,9 @@ export const getClassSubtypes = (type) => {
 export const getClassTypeColor = (type) => {
   const info = getClassTypeInfo(type)
   const colorMap = {
+    black: 'bg-gray-100 text-black border-gray-300',
     purple: 'bg-purple-100 text-purple-800 border-purple-200',
     blue: 'bg-blue-100 text-blue-800 border-blue-200'
   }
-  return colorMap[info.color] || colorMap.purple
+  return colorMap[info.color] || colorMap.black
 }

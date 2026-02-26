@@ -76,7 +76,9 @@
             <div class="flex justify-between items-start mb-4">
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-1">
-                  <span class="text-lg">{{ getClassTypeInfo(yogaClass.type).icon }}</span>
+                  <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
+                    <path :d="getClassTypeInfo(yogaClass.type).iconPath"></path>
+                  </svg>
                   <h4 class="font-semibold text-gray-900">{{ yogaClass.name }}</h4>
                 </div>
                 <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border mb-2', getClassTypeColor(yogaClass.type)]">

@@ -7,8 +7,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#b97e00ff',
-        secondary: '#000000ff'
+        primary: '#FF8C61',     // สีส้มสดใส
+        secondary: '#1A1A1A',   // สีดำ
+        accent: '#FF8C61',      // สีส้มอ่อน
+        dark: '#000000'         // สีดำเข้ม
       },
       fontFamily: {
         'sans': ['Kanit', 'Noto Sans Thai', 'sans-serif'],

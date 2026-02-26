@@ -59,21 +59,26 @@
       <div v-if="activeSection === 'classes'" class="space-y-4">
         <div class="flex justify-between items-center">
           <h2 class="text-lg font-semibold">จัดการคลาส</h2>
-          <button @click="showAddClassModal = true" class="btn-primary">
-            เพิ่มคลาส
-          </button>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-500">{{ classes.length }} คลาส</span>
+            <button @click="showAddClassModal = true" class="btn-primary">
+              เพิ่มคลาส
+            </button>
+          </div>
         </div>
 
         <div v-if="!loadingClasses" class="space-y-3">
           <div
-            v-for="yogaClass in classes"
+            v-for="yogaClass in paginatedClasses"
             :key="yogaClass.id"
             class="card"
           >
             <div class="flex justify-between items-start mb-3">
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-1">
-                  <span class="text-lg">{{ getClassTypeInfo(yogaClass.type).icon }}</span>
+                  <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
+                    <path :d="getClassTypeInfo(yogaClass.type).iconPath"></path>
+                  </svg>
                   <h4 class="font-semibold">{{ yogaClass.name }}</h4>
                   <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border', getClassTypeColor(yogaClass.type)]">
                     {{ getClassTypeInfo(yogaClass.type).label }}
@@ -161,6 +166,47 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Pagination for Classes -->
+        <div v-if="totalClassPages > 1" class="flex justify-between items-center mt-6">
+          <div class="text-sm text-gray-500">
+            แสดง {{ ((currentClassPage - 1) * classItemsPerPage) + 1 }}-{{ Math.min(currentClassPage * classItemsPerPage, classes.length) }} 
+            จาก {{ classes.length }} คลาส
+          </div>
+          <div class="flex items-center space-x-2">
+            <button
+              @click="currentClassPage = Math.max(1, currentClassPage - 1)"
+              :disabled="currentClassPage === 1"
+              class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ก่อนหน้า
+            </button>
+            
+            <div class="flex space-x-1">
+              <button
+                v-for="page in getVisibleClassPages()"
+                :key="page"
+                @click="currentClassPage = page"
+                :class="[
+                  'px-3 py-2 text-sm border rounded-lg',
+                  currentClassPage === page
+                    ? 'bg-primary text-white border-primary'
+                    : 'border-gray-300 hover:bg-gray-50'
+                ]"
+              >
+                {{ page }}
+              </button>
+            </div>
+            
+            <button
+              @click="currentClassPage = Math.min(totalClassPages, currentClassPage + 1)"
+              :disabled="currentClassPage === totalClassPages"
+              class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ถัดไป
+            </button>
           </div>
         </div>
       </div>
@@ -725,6 +771,10 @@ const bookingDateFilter = ref('all')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 
+// Pagination for classes
+const currentClassPage = ref(1)
+const classItemsPerPage = ref(10)
+
 // Edit states
 const showEditClassModal = ref(false)
 const editingClass = ref(null)
@@ -758,6 +808,34 @@ watch(() => editingClass.value?.type, (newType) => {
     editingClass.value.subtype = ''
   }
 })
+
+// Pagination for classes
+const paginatedClasses = computed(() => {
+  const startIndex = (currentClassPage.value - 1) * classItemsPerPage.value
+  const endIndex = startIndex + classItemsPerPage.value
+  return classes.value.slice(startIndex, endIndex)
+})
+
+const totalClassPages = computed(() => {
+  return Math.ceil(classes.value.length / classItemsPerPage.value)
+})
+
+const getVisibleClassPages = () => {
+  const pages = []
+  const maxVisible = 5
+  let start = Math.max(1, currentClassPage.value - Math.floor(maxVisible / 2))
+  let end = Math.min(totalClassPages.value, start + maxVisible - 1)
+  
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1)
+  }
+  
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+  
+  return pages
+}
 
 const formatDate = (dateString) => {
   return format(new Date(dateString), 'dd MMMM yyyy', { locale: th })
@@ -1035,11 +1113,18 @@ const isMembershipValid = (user) => {
   return expiry > new Date()
 }
 
-const loadClasses = async () => {
-  loadingClasses.value = true
+// โหลดข้อมูลทั้งหมดครั้งเดียว
+const loadAllData = async () => {
   try {
-    const snapshot = await getDocs(collection(db, 'classes'))
-    classes.value = snapshot.docs.map(doc => ({
+    // โหลดทั้ง 3 collections พร้อมกัน
+    const [classesSnapshot, usersSnapshot, bookingsSnapshot] = await Promise.all([
+      getDocs(collection(db, 'classes')),
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'bookings'))
+    ])
+    
+    // Process classes
+    classes.value = classesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })).sort((a, b) => {
@@ -1047,29 +1132,45 @@ const loadClasses = async () => {
       const dateA = new Date(`${a.date}T${a.time}`)
       const dateB = new Date(`${b.date}T${b.time}`)
       
-      // Separate upcoming and past classes
       const aIsPast = dateA < now
       const bIsPast = dateB < now
       
-      // If one is past and one is upcoming, upcoming comes first
       if (aIsPast && !bIsPast) return 1
       if (!aIsPast && bIsPast) return -1
       
-      // If both are upcoming, sort by date (earliest first)
       if (!aIsPast && !bIsPast) {
         return dateA - dateB
       }
       
-      // If both are past, sort by date (latest first)
       return dateB - dateA
     })
     
-    // Load bookings for classes
-    const bookingsSnapshot = await getDocs(collection(db, 'bookings'))
-    classBookings.value = bookingsSnapshot.docs.map(doc => ({
+    // Process users
+    users.value = usersSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }))
+    
+    // Process bookings (ใช้ร่วมกันทั้ง classBookings และ allBookings)
+    const bookingsData = bookingsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+    
+    classBookings.value = bookingsData
+    allBookings.value = bookingsData.sort((a, b) => 
+      new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`)
+    )
+    
+  } catch (error) {
+    console.error('Error loading data:', error)
+  }
+}
+
+const loadClasses = async () => {
+  loadingClasses.value = true
+  try {
+    await loadAllData()
   } catch (error) {
     console.error('Error loading classes:', error)
   } finally {
@@ -1080,11 +1181,9 @@ const loadClasses = async () => {
 const loadUsers = async () => {
   loadingUsers.value = true
   try {
-    const snapshot = await getDocs(collection(db, 'users'))
-    users.value = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }))
+    if (users.value.length === 0) {
+      await loadAllData()
+    }
   } catch (error) {
     console.error('Error loading users:', error)
   } finally {
@@ -1095,11 +1194,9 @@ const loadUsers = async () => {
 const loadBookings = async () => {
   loadingBookings.value = true
   try {
-    const snapshot = await getDocs(collection(db, 'bookings'))
-    allBookings.value = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })).sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`))
+    if (allBookings.value.length === 0) {
+      await loadAllData()
+    }
   } catch (error) {
     console.error('Error loading bookings:', error)
   } finally {
@@ -1138,7 +1235,7 @@ const updateClass = async () => {
     
     showEditClassModal.value = false
     editingClass.value = null
-    await loadClasses()
+    await loadAllData()
     
     Swal.fire({
       title: 'สำเร็จ!',
@@ -1192,7 +1289,7 @@ const addClass = async () => {
     }
     
     showAddClassModal.value = false
-    await loadClasses()
+    await loadAllData()
     
     Swal.fire({
       title: 'สำเร็จ!',
@@ -1229,7 +1326,7 @@ const deleteClass = async (yogaClass) => {
   
   try {
     await deleteDoc(doc(db, 'classes', yogaClass.id))
-    await loadClasses()
+    await loadAllData()
     Swal.fire({
       title: 'สำเร็จ!',
       text: 'ลบคลาสสำเร็จ!',
@@ -1415,7 +1512,7 @@ const setMembershipExpiry = async (user) => {
     // Clear the stored date
     delete selectedDates.value[user.id]
     
-    await loadUsers()
+    await loadAllData()
     Swal.fire({
       title: 'สำเร็จ!',
       text: 'ตั้งวันหมดอายุสมาชิกสำเร็จ!',
@@ -1438,9 +1535,16 @@ watch([bookingSearch, bookingStatusFilter, bookingDateFilter, bookingSortBy], ()
   currentPage.value = 1
 })
 
-onMounted(() => {
-  loadClasses()
-  loadUsers()
-  loadBookings()
+onMounted(async () => {
+  // โหลดข้อมูลทั้งหมดครั้งเดียว
+  loadingClasses.value = true
+  loadingUsers.value = true
+  loadingBookings.value = true
+  
+  await loadAllData()
+  
+  loadingClasses.value = false
+  loadingUsers.value = false
+  loadingBookings.value = false
 })
 </script>

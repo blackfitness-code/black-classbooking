@@ -47,6 +47,17 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
     const authStore = useAuthStore()
 
+    // ถ้าไปหน้า profile-setup ให้ผ่านได้ถ้ามี needsProfileSetup
+    if (to.path === '/profile-setup') {
+        if (authStore.needsProfileSetup || authStore.isAuthenticated) {
+            next()
+            return
+        }
+        // ถ้าไม่มี needsProfileSetup และไม่ได้ login ให้กลับไปหน้าแรก
+        next('/')
+        return
+    }
+
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
         next('/')
         return

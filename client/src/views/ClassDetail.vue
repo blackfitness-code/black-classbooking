@@ -34,7 +34,9 @@
         <!-- Class Header -->
         <div class="card">
           <div class="flex items-center gap-3 mb-3">
-            <span class="text-3xl">{{ getClassTypeInfo(yogaClass.type).icon }}</span>
+            <svg class="w-8 h-8 text-black" fill="currentColor" viewBox="0 0 24 24">
+              <path :d="getClassTypeInfo(yogaClass.type).iconPath"></path>
+            </svg>
             <div class="flex-1">
               <h2 class="text-2xl font-bold text-gray-900">{{ yogaClass.name }}</h2>
               <span :class="['inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border mt-1', getClassTypeColor(yogaClass.type)]">

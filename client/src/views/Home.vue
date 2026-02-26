@@ -77,15 +77,11 @@
             </div>
             <h2 class="text-xl font-semibold text-gray-900 mb-2">ยินดีต้อนรับ!</h2>
             <p class="text-gray-700 mb-4">กรุณากรอกข้อมูลเบื้องต้นเพื่อเริ่มใช้งานระบบจองคลาสออกกำลังกาย</p>
-            <div class="text-sm text-blue-600 mb-4">
-              ✓ ข้อมูลส่วนตัว<br>
-              ✓ ประสบการณ์การออกกำลังกาย<br>
-              ✓ ข้อมูลสุขภาพ
-            </div>
+            
           </div>
-          <router-link to="/profile-setup" class="btn-primary w-full inline-block">
+          <button @click="goToProfileSetup" class="btn-primary w-full">
             เริ่มกรอกข้อมูล
-          </router-link>
+          </button>
         </div>
       </div>
 
@@ -227,7 +223,12 @@ const isLoading = computed(() => {
 })
 
 const showProfileSetup = computed(() => {
-  return authStore.isAuthenticated && authStore.needsProfileSetup
+  // แสดงปุ่มกรอกข้อมูลถ้า:
+  // 1. LIFF พร้อมแล้วและมี profile
+  // 2. ต้องการ setup profile
+  return liffStore.isLiffReady && 
+         liffStore.profile && 
+         authStore.needsProfileSetup
 })
 
 const showMainMenu = computed(() => {
@@ -284,6 +285,29 @@ const handleWindowFocus = () => {
     console.log('Window focused, refreshing profile...')
     refreshProfile()
   }
+}
+
+const goToProfileSetup = async () => {
+  console.log('🔘 Button clicked - Going to profile setup')
+  console.log('📊 State:', {
+    isLiffReady: liffStore.isLiffReady,
+    hasProfile: !!liffStore.profile,
+    needsProfileSetup: authStore.needsProfileSetup,
+    isAuthenticated: authStore.isAuthenticated
+  })
+  
+  // ตั้งค่า isAuthenticated ถ้ายังไม่ได้ตั้ง
+  if (!authStore.isAuthenticated && liffStore.profile) {
+    console.log('🔐 Setting authenticated state...')
+    await authStore.signInWithLineUserId(
+      liffStore.profile.userId,
+      liffStore.profile.displayName,
+      liffStore.profile.pictureUrl
+    )
+  }
+  
+  console.log('🚀 Navigating to /profile-setup')
+  router.push('/profile-setup')
 }
 
 onMounted(async () => {
