@@ -119,7 +119,7 @@
           <h3 class="text-xl font-semibold text-gray-900 mb-2">ยืนยันการยกเลิก</h3>
           <p class="text-gray-600 mb-2">คุณแน่ใจหรือไม่ที่จะยกเลิกการจองนี้?</p>
           <p class="text-xs text-orange-600">
-            หมายเหตุ: สามารถยกเลิกได้เฉพาะก่อน 4 ชั่วโมงก่อนคลาสเริ่มเท่านั้น
+            หมายเหตุ: สามารถยกเลิกได้เฉพาะก่อน 24 ชั่วโมงก่อนคลาสเริ่มเท่านั้น
           </p>
         </div>
         
@@ -230,9 +230,9 @@ const canCancel = (booking) => {
   const now = new Date()
   const bookingDate = new Date(`${booking.date}T${booking.time}:00`)
   
-  // Can cancel only if more than 4 hours before class starts
+  // Can cancel only if more than 24 hours before class starts
   const hoursDiff = (bookingDate - now) / (1000 * 60 * 60)
-  return hoursDiff > 4
+  return hoursDiff > 24
 }
 
 const getCancelReasonText = (booking) => {
@@ -242,7 +242,7 @@ const getCancelReasonText = (booking) => {
   
   if (hoursDiff <= 0) {
     return 'คลาสเริ่มแล้ว'
-  } else if (hoursDiff <= 4) {
+  } else if (hoursDiff <= 24) {
     const hoursLeft = Math.floor(hoursDiff)
     const minutesLeft = Math.floor((hoursDiff - hoursLeft) * 60)
     return `ไม่สามารถยกเลิกได้ (เหลือเวลา ${hoursLeft} ชม. ${minutesLeft} นาที)`
