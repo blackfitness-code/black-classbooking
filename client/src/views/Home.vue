@@ -99,10 +99,10 @@
             </div>
             <div class="flex-1">
               <p class="font-medium text-orange-800">
-                {{ !authStore.userProfile?.membershipExpiry ? 'ยังไม่มีสมาชิก' : 'สมาชิกหมดอายุ' }}
+                {{ !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ' }}
               </p>
               <p class="text-sm text-orange-600">
-                {{ !authStore.userProfile?.membershipExpiry ? 'โปรดติดต่อแอดมิน' : 'กรุณาต่ออายุสมาชิกเพื่อจองคลาส' }}
+                {{ !authStore.userProfile?.membershipExpiry ? '' : 'กรุณาต่ออายุสมาชิกเพื่อจองคลาส' }}
               </p>
             </div>
           </div>
@@ -203,7 +203,7 @@ const authStore = useAuthStore()
 const isDev = import.meta.env.DEV
 
 const membershipStatus = computed(() => {
-  if (!authStore.userProfile?.membershipExpiry) return 'ยังไม่มีสมาชิก - โปรดติดต่อแอดมิน'
+  if (!authStore.userProfile?.membershipExpiry) return 'ระบบกำลังตรวจสอบข้อมูล'
   
   const expiry = new Date(authStore.userProfile.membershipExpiry)
   const isValid = expiry > new Date()

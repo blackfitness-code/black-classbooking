@@ -154,7 +154,7 @@
             </div>
             <div class="flex-1">
               <p class="font-medium text-orange-800">
-                {{ !authStore.userProfile?.membershipExpiry ? 'ยังไม่มีสมาชิก' : 'สมาชิกหมดอายุ' }}
+                {{ !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ' }}
               </p>
               <p class="text-sm text-orange-600">
                 {{ !authStore.userProfile?.membershipExpiry ? 'โปรดติดต่อแอดมินเพื่อสมัครสมาชิก' : 'กรุณาต่ออายุสมาชิกเพื่อจองคลาส' }}
@@ -333,7 +333,7 @@ const canBook = () => {
 const getBookingButtonText = () => {
   if (!yogaClass.value) return 'กำลังโหลด...'
   if (!authStore.isMembershipValid()) {
-    return !authStore.userProfile?.membershipExpiry ? 'ยังไม่มีสมาชิก' : 'สมาชิกหมดอายุ'
+    return !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ'
   }
   if (yogaClass.value.currentBookings >= yogaClass.value.maxCapacity) return 'เต็มแล้ว'
   if (isAlreadyBooked.value) return 'จองแล้ว'
