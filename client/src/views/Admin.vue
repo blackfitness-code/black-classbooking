@@ -288,7 +288,15 @@
                 <p class="text-sm text-gray-600">
                   สมาชิก: {{ user.membershipExpiry ? formatDate((user.membershipExpiry.toDate ? user.membershipExpiry.toDate() : new Date(user.membershipExpiry)).toISOString().split('T')[0]) : 'ไม่มี' }}
                 </p>
-                <p class="text-sm text-gray-600">Role: {{ user.role || 'user' }}</p>
+                <p class="text-sm text-gray-600">
+                  Role: 
+                  <span :class="[
+                    'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ml-1',
+                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                  ]">
+                    {{ user.role === 'admin' ? 'Admin' : 'User' }}
+                  </span>
+                </p>
               </div>
               <span
                 :class="[
@@ -300,6 +308,26 @@
               >
                 {{ isMembershipValid(user) ? 'ใช้งานได้' : 'หมดอายุ' }}
               </span>
+            </div>
+            
+            <!-- Role Management -->
+            <div class="space-y-2 mb-3 pb-3 border-b border-gray-100">
+              <label class="block text-sm font-medium text-gray-700">
+                จัดการ Role
+              </label>
+              <div class="flex space-x-2">
+                <select
+                  :value="user.role || 'user'"
+                  @change="updateUserRole(user, $event.target.value)"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                >
+                  <option value="user">User (ผู้ใช้ทั่วไป)</option>
+                  <option value="admin">Admin (ผู้ดูแลระบบ)</option>
+                </select>
+              </div>
+              <p class="text-xs text-gray-500">
+                Admin สามารถเข้าถึงหน้าจัดการระบบได้
+              </p>
             </div>
             
             <!-- Date Picker for Membership Expiry -->
@@ -1590,6 +1618,51 @@ const setMembershipExpiry = async (user) => {
       icon: 'error',
       confirmButtonText: 'ตกลง'
     })
+  }
+}
+
+const updateUserRole = async (user, newRole) => {
+  try {
+    const result = await Swal.fire({
+      title: 'ยืนยันการเปลี่ยน Role',
+      html: `คุณต้องการเปลี่ยน Role ของ <strong>${user.nickname || user.displayName || 'ผู้ใช้'}</strong><br>เป็น <strong>${newRole === 'admin' ? 'Admin' : 'User'}</strong> หรือไม่?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'ยืนยัน',
+      cancelButtonText: 'ยกเลิก'
+    })
+    
+    if (!result.isConfirmed) {
+      // Reset select to original value
+      await loadAllData()
+      return
+    }
+    
+    await updateDoc(doc(db, 'users', user.id), {
+      role: newRole,
+      updatedAt: new Date()
+    })
+    
+    await loadAllData()
+    
+    Swal.fire({
+      title: 'สำเร็จ!',
+      text: `เปลี่ยน Role เป็น ${newRole === 'admin' ? 'Admin' : 'User'} สำเร็จ!`,
+      icon: 'success',
+      confirmButtonText: 'ตกลง'
+    })
+  } catch (error) {
+    console.error('Error updating user role:', error)
+    Swal.fire({
+      title: 'เกิดข้อผิดพลาด!',
+      text: 'เกิดข้อผิดพลาดในการเปลี่ยน Role',
+      icon: 'error',
+      confirmButtonText: 'ตกลง'
+    })
+    // Reload to reset the select
+    await loadAllData()
   }
 }
 

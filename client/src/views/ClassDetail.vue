@@ -154,7 +154,7 @@
             </div>
             <div class="flex-1">
               <p class="font-medium text-orange-800">
-                {{ !authStore.userProfile?.membershipExpiry ? 'ยังไม่มีสมาชิก' : 'สมาชิกหมดอายุ' }}
+                {{ !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ' }}
               </p>
               <p class="text-sm text-orange-600">
                 {{ !authStore.userProfile?.membershipExpiry ? 'โปรดติดต่อแอดมินเพื่อสมัครสมาชิก' : 'กรุณาต่ออายุสมาชิกเพื่อจองคลาส' }}
@@ -216,7 +216,7 @@
           </div>
           <h3 class="text-xl font-semibold text-gray-900 mb-2">ยืนยันการจอง</h3>
           <p class="text-xs text-orange-600">
-            หมายเหตุ: สามารถยกเลิกได้เฉพาะก่อน 4 ชั่วโมงก่อนคลาสเริ่มเท่านั้น
+            หมายเหตุ: สามารถยกเลิกได้เฉพาะก่อน 24 ชั่วโมงก่อนคลาสเริ่มเท่านั้น
           </p>
         </div>
         
@@ -333,7 +333,7 @@ const canBook = () => {
 const getBookingButtonText = () => {
   if (!yogaClass.value) return 'กำลังโหลด...'
   if (!authStore.isMembershipValid()) {
-    return !authStore.userProfile?.membershipExpiry ? 'ยังไม่มีสมาชิก' : 'สมาชิกหมดอายุ'
+    return !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ'
   }
   if (yogaClass.value.currentBookings >= yogaClass.value.maxCapacity) return 'เต็มแล้ว'
   if (isAlreadyBooked.value) return 'จองแล้ว'

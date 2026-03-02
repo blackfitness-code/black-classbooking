@@ -24,10 +24,10 @@
           </div>
           <div class="flex-1">
             <p class="font-medium text-orange-800">
-              {{ !authStore.userProfile?.membershipExpiry ? 'ยังไม่มีสมาชิก' : 'สมาชิกหมดอายุ' }}
+              {{ !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ' }}
             </p>
             <p class="text-sm text-orange-600">
-              {{ !authStore.userProfile?.membershipExpiry ? 'โปรดติดต่อแอดมินเพื่อสมัครสมาชิก' : 'กรุณาต่ออายุสมาชิกเพื่อจองคลาส' }}
+              {{ !authStore.userProfile?.membershipExpiry ? '' : 'กรุณาต่ออายุสมาชิกเพื่อจองคลาส' }}
             </p>
           </div>
         </div>
@@ -154,7 +154,7 @@
           </div>
           <h3 class="text-xl font-semibold text-gray-900 mb-2">ยืนยันการจอง</h3>
           <p class="text-xs text-orange-600">
-            หมายเหตุ: สามารถยกเลิกได้เฉพาะก่อน 4 ชั่วโมงก่อนคลาสเริ่มเท่านั้น
+            หมายเหตุ: สามารถยกเลิกได้เฉพาะก่อน 24 ชั่วโมงก่อนคลาสเริ่มเท่านั้น
           </p>
         </div>
         
@@ -253,6 +253,18 @@ const filteredClasses = computed(() => {
   if (!selectedDate.value) return []
   const filtered = classes.value.filter(c => c.date === selectedDate.value)
   
+  // Sort by time
+  filtered.sort((a, b) => {
+    const timeA = a.time.split(':').map(Number)
+    const timeB = b.time.split(':').map(Number)
+    
+    // Compare hours first, then minutes
+    if (timeA[0] !== timeB[0]) {
+      return timeA[0] - timeB[0]
+    }
+    return timeA[1] - timeB[1]
+  })
+  
   console.log('Debug Filtered Classes:', {
     selectedDate: selectedDate.value,
     allClasses: classes.value,
@@ -296,7 +308,7 @@ const canBook = (yogaClass) => {
 
 const getBookingButtonText = (yogaClass) => {
   if (!authStore.isMembershipValid()) {
-    return !authStore.userProfile?.membershipExpiry ? 'ยังไม่มีสมาชิก' : 'สมาชิกหมดอายุ'
+    return !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ'
   }
   if (yogaClass.currentBookings >= yogaClass.maxCapacity) return 'เต็มแล้ว'
   
