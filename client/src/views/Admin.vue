@@ -57,14 +57,34 @@
 
       <!-- Classes Management -->
       <div v-if="activeSection === 'classes'" class="space-y-4">
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-semibold">จัดการคลาส</h2>
           <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-500">{{ classes.length }} คลาส</span>
-            <button @click="showAddClassModal = true" class="btn-primary">
+            <span class="text-sm text-gray-500">{{ filteredClasses.length }} คลาส</span>
+            <button @click="showAddClassModal = true" class="btn-primary flex items-center gap-2">
+              <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
               เพิ่มคลาส
             </button>
           </div>
+        </div>
+
+        <!-- Date Filter -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">กรองตามวันที่</label>
+          <input
+            v-model="classDateFilter"
+            type="date"
+            class="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-auto"
+          >
+          <button
+            v-if="classDateFilter"
+            @click="classDateFilter = ''"
+            class="ml-2 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          >
+            ล้างตัวกรอง
+          </button>
         </div>
 
         <div v-if="!loadingClasses" class="space-y-3">
@@ -172,8 +192,8 @@
         <!-- Pagination for Classes -->
         <div v-if="totalClassPages > 1" class="flex justify-between items-center mt-6">
           <div class="text-sm text-gray-500">
-            แสดง {{ ((currentClassPage - 1) * classItemsPerPage) + 1 }}-{{ Math.min(currentClassPage * classItemsPerPage, classes.length) }} 
-            จาก {{ classes.length }} คลาส
+            แสดง {{ ((currentClassPage - 1) * classItemsPerPage) + 1 }}-{{ Math.min(currentClassPage * classItemsPerPage, filteredClasses.length) }} 
+            จาก {{ filteredClasses.length }} คลาส
           </div>
           <div class="flex items-center space-x-2">
             <button
@@ -236,6 +256,7 @@
           <!-- Filters -->
           <div class="flex space-x-2">
             <select v-model="userSortBy" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+              <option value="createdAt">เรียงตามวันที่สมัคร</option>
               <option value="name">เรียงตามชื่อ</option>
               <option value="membership">เรียงตามสมาชิก</option>
               <option value="role">เรียงตาม Role</option>
@@ -744,6 +765,7 @@ import { th } from 'date-fns/locale'
 import Swal from 'sweetalert2'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { CLASS_TYPES, getClassTypeInfo, getClassTypeColor, getClassSubtypes, getClassSubtypeInfo } from '../constants/classTypes'
+import { getCachedData, setCachedData, clearCache, CACHE_KEYS } from '../utils/cache'
 
 const authStore = useAuthStore()
 
@@ -756,9 +778,12 @@ const loadingClasses = ref(false)
 const loadingUsers = ref(false)
 const loadingBookings = ref(false)
 
+// Class date filter
+const classDateFilter = ref('')
+
 // Search and filter states
 const userSearch = ref('')
-const userSortBy = ref('name')
+const userSortBy = ref('createdAt') // เปลี่ยน default เป็นวันที่สมัคร
 const membershipFilter = ref('all')
 
 // Booking search and filter states
@@ -798,6 +823,15 @@ const editAvailableSubtypes = computed(() => {
   return editingClass.value ? getClassSubtypes(editingClass.value.type) : []
 })
 
+// Filtered classes by date
+const filteredClasses = computed(() => {
+  if (!classDateFilter.value) {
+    return classes.value
+  }
+  
+  return classes.value.filter(yogaClass => yogaClass.date === classDateFilter.value)
+})
+
 // Watch for type change to reset subtype
 watch(() => newClass.value.type, (newType) => {
   newClass.value.subtype = ''
@@ -813,11 +847,11 @@ watch(() => editingClass.value?.type, (newType) => {
 const paginatedClasses = computed(() => {
   const startIndex = (currentClassPage.value - 1) * classItemsPerPage.value
   const endIndex = startIndex + classItemsPerPage.value
-  return classes.value.slice(startIndex, endIndex)
+  return filteredClasses.value.slice(startIndex, endIndex)
 })
 
 const totalClassPages = computed(() => {
-  return Math.ceil(classes.value.length / classItemsPerPage.value)
+  return Math.ceil(filteredClasses.value.length / classItemsPerPage.value)
 })
 
 const getVisibleClassPages = () => {
@@ -933,6 +967,12 @@ const filteredUsers = computed(() => {
   // Sort
   filtered.sort((a, b) => {
     switch (userSortBy.value) {
+      case 'createdAt':
+        // เรียงตามวันที่สมัคร (ล่าสุดก่อน)
+        const createdA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0)
+        const createdB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0)
+        return createdB - createdA
+      
       case 'name':
         const nameA = a.nickname || a.displayName || ''
         const nameB = b.nickname || b.displayName || ''
@@ -1114,8 +1154,25 @@ const isMembershipValid = (user) => {
 }
 
 // โหลดข้อมูลทั้งหมดครั้งเดียว
-const loadAllData = async () => {
+const loadAllData = async (forceRefresh = false) => {
   try {
+    // ลองอ่านจาก cache ก่อน (ถ้าไม่ใช่ force refresh)
+    if (!forceRefresh) {
+      const cachedClasses = getCachedData(CACHE_KEYS.ADMIN_CLASSES)
+      const cachedUsers = getCachedData(CACHE_KEYS.ADMIN_USERS)
+      const cachedBookings = getCachedData(CACHE_KEYS.ADMIN_BOOKINGS)
+      
+      if (cachedClasses && cachedUsers && cachedBookings) {
+        console.log('📦 Using cached data')
+        classes.value = cachedClasses
+        users.value = cachedUsers
+        classBookings.value = cachedBookings
+        allBookings.value = cachedBookings
+        return
+      }
+    }
+    
+    console.log('🔄 Loading fresh data from Firestore')
     // โหลดทั้ง 3 collections พร้อมกัน
     const [classesSnapshot, usersSnapshot, bookingsSnapshot] = await Promise.all([
       getDocs(collection(db, 'classes')),
@@ -1161,6 +1218,12 @@ const loadAllData = async () => {
     allBookings.value = bookingsData.sort((a, b) => 
       new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`)
     )
+    
+    // บันทึกลง cache
+    setCachedData(CACHE_KEYS.ADMIN_CLASSES, classes.value)
+    setCachedData(CACHE_KEYS.ADMIN_USERS, users.value)
+    setCachedData(CACHE_KEYS.ADMIN_BOOKINGS, bookingsData)
+    console.log('💾 Data cached successfully')
     
   } catch (error) {
     console.error('Error loading data:', error)
@@ -1235,7 +1298,7 @@ const updateClass = async () => {
     
     showEditClassModal.value = false
     editingClass.value = null
-    await loadAllData()
+    await loadAllData(true) // Force refresh หลังแก้ไข
     
     Swal.fire({
       title: 'สำเร็จ!',
@@ -1289,7 +1352,7 @@ const addClass = async () => {
     }
     
     showAddClassModal.value = false
-    await loadAllData()
+    await loadAllData(true) // Force refresh หลังเพิ่ม
     
     Swal.fire({
       title: 'สำเร็จ!',
@@ -1326,7 +1389,7 @@ const deleteClass = async (yogaClass) => {
   
   try {
     await deleteDoc(doc(db, 'classes', yogaClass.id))
-    await loadAllData()
+    await loadAllData(true) // Force refresh หลังลบ
     Swal.fire({
       title: 'สำเร็จ!',
       text: 'ลบคลาสสำเร็จ!',
@@ -1512,7 +1575,7 @@ const setMembershipExpiry = async (user) => {
     // Clear the stored date
     delete selectedDates.value[user.id]
     
-    await loadAllData()
+    await loadAllData(true) // Force refresh หลังอัพเดต membership
     Swal.fire({
       title: 'สำเร็จ!',
       text: 'ตั้งวันหมดอายุสมาชิกสำเร็จ!',
@@ -1533,6 +1596,11 @@ const setMembershipExpiry = async (user) => {
 // Reset pagination when filters change
 watch([bookingSearch, bookingStatusFilter, bookingDateFilter, bookingSortBy], () => {
   currentPage.value = 1
+})
+
+// Reset class pagination when date filter changes
+watch(classDateFilter, () => {
+  currentClassPage.value = 1
 })
 
 onMounted(async () => {
