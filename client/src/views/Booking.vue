@@ -357,7 +357,12 @@ const loadClasses = async () => {
     classes.value = classesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }))
+    })).sort((a, b) => {
+      // เรียงตามเวลา (เช้า -> เย็น)
+      const timeA = a.time || '00:00'
+      const timeB = b.time || '00:00'
+      return timeA.localeCompare(timeB)
+    })
     
     // Load user's bookings
     if (authStore.userProfile?.lineUserId) {

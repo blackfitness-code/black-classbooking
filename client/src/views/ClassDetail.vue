@@ -100,7 +100,7 @@
               </div>
               <div class="flex-1">
                 <p class="text-sm text-gray-500">ครูผู้สอน</p>
-                <p class="font-medium text-gray-900">{{ yogaClass.instructor }}</p>
+                <p class="font-medium text-gray-900"> ครู {{ yogaClass.instructor }}</p>
               </div>
             </div>
 
