@@ -1,14 +1,14 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50">
     <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-10">
+    <header class="bg-gradient-to-r from-orange-500 to-pink-500 shadow-lg sticky top-0 z-10">
       <div class="max-w-md mx-auto px-4 py-4 flex items-center">
-        <button @click="$router.go(-1)" class="mr-4">
+        <button @click="$router.go(-1)" class="mr-4 text-white hover:bg-white/20 rounded-lg p-2 transition-all">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
           </svg>
         </button>
-        <h1 class="text-xl font-bold text-gray-800">จัดการระบบ</h1>
+        <h1 class="text-xl font-bold text-white">จัดการระบบ</h1>
       </div>
     </header>
 
@@ -286,7 +286,7 @@
                   </span>
                 </h4>
                 <p class="text-sm text-gray-600">
-                  สมาชิก: {{ user.membershipExpiry ? formatDate((user.membershipExpiry.toDate ? user.membershipExpiry.toDate() : new Date(user.membershipExpiry)).toISOString().split('T')[0]) : 'ไม่มี' }}
+                  สมาชิก: {{ getMembershipExpiryDisplay(user) }}
                 </p>
                 <p class="text-sm text-gray-600">
                   Role: 
@@ -900,7 +900,15 @@ const getVisibleClassPages = () => {
 }
 
 const formatDate = (dateString) => {
-  return format(new Date(dateString), 'dd MMMM yyyy', { locale: th })
+  if (!dateString) return 'ไม่มีข้อมูล'
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return 'วันที่ไม่ถูกต้อง'
+    return format(date, 'dd MMMM yyyy', { locale: th })
+  } catch (error) {
+    console.error('Error formatting date:', dateString, error)
+    return 'วันที่ไม่ถูกต้อง'
+  }
 }
 
 const getClassStatus = (yogaClass) => {
@@ -944,8 +952,15 @@ const pastClasses = computed(() => {
 })
 
 const formatTime = (timestamp) => {
-  const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp)
-  return format(date, 'HH:mm', { locale: th })
+  if (!timestamp) return 'ไม่มีข้อมูล'
+  try {
+    const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp)
+    if (isNaN(date.getTime())) return 'เวลาไม่ถูกต้อง'
+    return format(date, 'HH:mm', { locale: th })
+  } catch (error) {
+    console.error('Error formatting time:', timestamp, error)
+    return 'เวลาไม่ถูกต้อง'
+  }
 }
 
 const getClassBookings = (classId) => {
@@ -1258,6 +1273,19 @@ const loadAllData = async (forceRefresh = false) => {
   }
 }
 
+const refreshData = async () => {
+  console.log('🔄 Refreshing data...')
+  loadingClasses.value = true
+  loadingUsers.value = true
+  loadingBookings.value = true
+  
+  await loadAllData(true) // Force refresh
+  
+  loadingClasses.value = false
+  loadingUsers.value = false
+  loadingBookings.value = false
+}
+
 const loadClasses = async () => {
   loadingClasses.value = true
   try {
@@ -1445,14 +1473,36 @@ const getMembershipExpiryForInput = (user) => {
   }
   
   if (user.membershipExpiry) {
-    const expiry = user.membershipExpiry.toDate ? 
-      user.membershipExpiry.toDate() : 
-      new Date(user.membershipExpiry)
-    return expiry.toISOString().split('T')[0]
+    try {
+      const expiry = user.membershipExpiry.toDate ? 
+        user.membershipExpiry.toDate() : 
+        new Date(user.membershipExpiry)
+      if (isNaN(expiry.getTime())) {
+        return new Date().toISOString().split('T')[0]
+      }
+      return expiry.toISOString().split('T')[0]
+    } catch (error) {
+      console.error('Error getting membership expiry:', error)
+      return new Date().toISOString().split('T')[0]
+    }
   }
   
   // Default to today if no expiry date
   return new Date().toISOString().split('T')[0]
+}
+
+const getMembershipExpiryDisplay = (user) => {
+  if (!user.membershipExpiry) return 'ไม่มี'
+  try {
+    const expiry = user.membershipExpiry.toDate ? 
+      user.membershipExpiry.toDate() : 
+      new Date(user.membershipExpiry)
+    if (isNaN(expiry.getTime())) return 'วันที่ไม่ถูกต้อง'
+    return formatDate(expiry.toISOString().split('T')[0])
+  } catch (error) {
+    console.error('Error displaying membership expiry:', error)
+    return 'วันที่ไม่ถูกต้อง'
+  }
 }
 
 const updateMembershipExpiry = (user, dateValue) => {
@@ -1542,6 +1592,17 @@ const exportBookingsToCSV = () => {
   // CSV data
   const csvData = filteredBookings.value.map(booking => {
     const user = getUserProfile(booking.userId)
+    let bookedAtDate = ''
+    if (booking.bookedAt) {
+      try {
+        const date = booking.bookedAt.toDate ? booking.bookedAt.toDate() : new Date(booking.bookedAt)
+        if (!isNaN(date.getTime())) {
+          bookedAtDate = formatDate(date.toISOString().split('T')[0])
+        }
+      } catch (error) {
+        console.error('Error formatting bookedAt date:', error)
+      }
+    }
     return [
       formatDate(booking.date),
       booking.time,
@@ -1551,7 +1612,7 @@ const exportBookingsToCSV = () => {
       user?.firstName || '',
       user?.lastName || '',
       getStatusText(booking.status),
-      booking.bookedAt ? formatDate(booking.bookedAt.toDate ? booking.bookedAt.toDate().toISOString().split('T')[0] : new Date(booking.bookedAt).toISOString().split('T')[0]) : ''
+      bookedAtDate
     ]
   })
   

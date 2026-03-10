@@ -286,10 +286,10 @@ const canBook = (yogaClass) => {
   )
   if (alreadyBooked) return false
   
-  // Check if class starts more than 2 hours from now (can book until 2 hours before class)
+  // Check if class starts more than 30 minutes from now (can book until 30 minutes before class)
   const classDateTime = new Date(`${yogaClass.date}T${yogaClass.time}:00`)
   const now = new Date()
-  const hoursDiff = (classDateTime - now) / (1000 * 60 * 60)
+  const minutesDiff = (classDateTime - now) / (1000 * 60)
   
   // Debug logging
   console.log('Debug canBook:', {
@@ -298,12 +298,12 @@ const canBook = (yogaClass) => {
     classTime: yogaClass.time,
     classDateTime: classDateTime.toISOString(),
     now: now.toISOString(),
-    hoursDiff: hoursDiff,
-    canBook: hoursDiff > 2 && hoursDiff <= (7 * 24)
+    minutesDiff: minutesDiff,
+    canBook: minutesDiff > 30 && minutesDiff <= (7 * 24 * 60)
   })
   
-  // Can book if class is more than 2 hours away and within 7 days
-  return hoursDiff > 2 && hoursDiff <= (7 * 24)
+  // Can book if class is more than 30 minutes away and within 7 days
+  return minutesDiff > 30 && minutesDiff <= (7 * 24 * 60)
 }
 
 const getBookingButtonText = (yogaClass) => {
@@ -322,19 +322,19 @@ const getBookingButtonText = (yogaClass) => {
   
   const classDateTime = new Date(`${yogaClass.date}T${yogaClass.time}:00`)
   const now = new Date()
-  const hoursDiff = (classDateTime - now) / (1000 * 60 * 60)
+  const minutesDiff = (classDateTime - now) / (1000 * 60)
   
   // Debug logging
   console.log('Debug getBookingButtonText:', {
     className: yogaClass.name,
     classDate: yogaClass.date,
     classTime: yogaClass.time,
-    hoursDiff: hoursDiff
+    minutesDiff: minutesDiff
   })
   
-  if (hoursDiff <= 0) return 'คลาสเริ่มแล้ว'
-  if (hoursDiff <= 2) return 'ปิดรับจองแล้ว'
-  if (hoursDiff > (7 * 24)) return 'ยังไม่เปิดรับจอง'
+  if (minutesDiff <= 0) return 'คลาสเริ่มแล้ว'
+  if (minutesDiff <= 30) return 'ปิดรับจองแล้ว (จองได้ก่อนคลาส 30 นาที)'
+  if (minutesDiff > (7 * 24 * 60)) return 'ยังไม่เปิดรับจอง'
   
   return 'จองคลาส'
 }

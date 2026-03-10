@@ -325,9 +325,9 @@ const canBook = () => {
   
   const classDateTime = new Date(`${yogaClass.value.date}T${yogaClass.value.time}:00`)
   const now = new Date()
-  const hoursDiff = (classDateTime - now) / (1000 * 60 * 60)
+  const minutesDiff = (classDateTime - now) / (1000 * 60)
   
-  return hoursDiff > 2 && hoursDiff <= (7 * 24)
+  return minutesDiff > 30 && minutesDiff <= (7 * 24 * 60)
 }
 
 const getBookingButtonText = () => {
@@ -340,11 +340,11 @@ const getBookingButtonText = () => {
   
   const classDateTime = new Date(`${yogaClass.value.date}T${yogaClass.value.time}:00`)
   const now = new Date()
-  const hoursDiff = (classDateTime - now) / (1000 * 60 * 60)
+  const minutesDiff = (classDateTime - now) / (1000 * 60)
   
-  if (hoursDiff <= 0) return 'คลาสเริ่มแล้ว'
-  if (hoursDiff <= 2) return 'ปิดรับจองแล้ว'
-  if (hoursDiff > (7 * 24)) return 'ยังไม่เปิดรับจอง'
+  if (minutesDiff <= 0) return 'คลาสเริ่มแล้ว'
+  if (minutesDiff <= 30) return 'ปิดรับจองแล้ว (จองได้ก่อนคลาส 30 นาที)'
+  if (minutesDiff > (7 * 24 * 60)) return 'ยังไม่เปิดรับจอง'
   
   return 'จองคลาส'
 }
