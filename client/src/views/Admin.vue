@@ -589,178 +589,182 @@
     </main>
 
     <!-- Edit Class Modal -->
-    <div v-if="showEditClassModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-semibold mb-4">แก้ไขคลาส</h3>
-        <form @submit.prevent="updateClass" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium mb-1">ประเภทคลาส</label>
-            <select
-              v-model="editingClass.type"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option v-for="classType in CLASS_TYPES" :key="classType.value" :value="classType.value">
-                {{ classType.icon }} {{ classType.label }}
-              </option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">คลาส</label>
-            <select
-              v-model="editingClass.subtype"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="" disabled>เลือกคลาส</option>
-              <option v-for="subtype in editAvailableSubtypes" :key="subtype.value" :value="subtype.value">
-                {{ subtype.label }}
-              </option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">ชื่อและรายละเอียดจะถูกกำหนดอัตโนมัติตามคลาสที่เลือก</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">วันที่</label>
-            <input
-              v-model="editingClass.date"
-              type="date"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">เวลา</label>
-            <input
-              v-model="editingClass.time"
-              type="time"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">ครูผู้สอน</label>
-            <input
-              v-model="editingClass.instructor"
-              type="text"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">จำนวนคนสูงสุด</label>
-            <input
-              v-model.number="editingClass.maxCapacity"
-              type="number"
-              min="1"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-          </div>
-          <div class="flex space-x-3">
-            <button
-              type="button"
-              @click="showEditClassModal = false"
-              class="btn-secondary flex-1"
-            >
-              ยกเลิก
-            </button>
-            <button
-              type="submit"
-              class="btn-primary flex-1"
-              :disabled="addingClass"
-            >
-              {{ addingClass ? 'กำลังบันทึก...' : 'บันทึก' }}
-            </button>
-          </div>
-        </form>
+    <div v-if="showEditClassModal" class="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-sm max-h-[90dvh] overflow-y-auto">
+        <div class="p-6">
+          <h3 class="text-base font-semibold mb-4">แก้ไขคลาส</h3>
+          <form @submit.prevent="updateClass" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">ประเภทคลาส</label>
+              <select
+                v-model="editingClass.type"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+                <option v-for="classType in CLASS_TYPES" :key="classType.value" :value="classType.value">
+                  {{ classType.icon }} {{ classType.label }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">คลาส</label>
+              <select
+                v-model="editingClass.subtype"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+                <option value="" disabled>เลือกคลาส</option>
+                <option v-for="subtype in editAvailableSubtypes" :key="subtype.value" :value="subtype.value">
+                  {{ subtype.label }}
+                </option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">ชื่อและรายละเอียดจะถูกกำหนดอัตโนมัติตามคลาสที่เลือก</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">วันที่</label>
+              <input
+                v-model="editingClass.date"
+                type="date"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">เวลา</label>
+              <input
+                v-model="editingClass.time"
+                type="time"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">ครูผู้สอน</label>
+              <input
+                v-model="editingClass.instructor"
+                type="text"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">จำนวนคนสูงสุด</label>
+              <input
+                v-model.number="editingClass.maxCapacity"
+                type="number"
+                min="1"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+            </div>
+            <div class="flex gap-3 pt-1">
+              <button
+                type="button"
+                @click="showEditClassModal = false"
+                class="btn-secondary flex-1 py-3"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                class="btn-primary flex-1 py-3"
+                :disabled="addingClass"
+              >
+                {{ addingClass ? 'กำลังบันทึก...' : 'บันทึก' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
 
     <!-- Add Class Modal -->
-    <div v-if="showAddClassModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-semibold mb-4">เพิ่มคลาสใหม่</h3>
-        <form @submit.prevent="addClass" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium mb-1">ประเภทคลาส</label>
-            <select
-              v-model="newClass.type"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option v-for="classType in CLASS_TYPES" :key="classType.value" :value="classType.value">
-                {{ classType.icon }} {{ classType.label }}
-              </option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">คลาส</label>
-            <select
-              v-model="newClass.subtype"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="" disabled>เลือกคลาส</option>
-              <option v-for="subtype in availableSubtypes" :key="subtype.value" :value="subtype.value">
-                {{ subtype.label }}
-              </option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">ชื่อและรายละเอียดจะถูกกำหนดอัตโนมัติตามคลาสที่เลือก</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">วันที่</label>
-            <input
-              v-model="newClass.date"
-              type="date"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">เวลา</label>
-            <input
-              v-model="newClass.time"
-              type="time"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">ครูผู้สอน</label>
-            <input
-              v-model="newClass.instructor"
-              type="text"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">จำนวนคนสูงสุด</label>
-            <input
-              v-model.number="newClass.maxCapacity"
-              type="number"
-              min="1"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-          </div>
-          <div class="flex space-x-3">
-            <button
-              type="button"
-              @click="showAddClassModal = false"
-              class="btn-secondary flex-1"
-            >
-              ยกเลิก
-            </button>
-            <button
-              type="submit"
-              class="btn-primary flex-1"
-              :disabled="addingClass"
-            >
-              {{ addingClass ? 'กำลังเพิ่ม...' : 'เพิ่มคลาส' }}
-            </button>
-          </div>
-        </form>
+    <div v-if="showAddClassModal" class="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-sm max-h-[90dvh] overflow-y-auto">
+        <div class="p-6">
+          <h3 class="text-base font-semibold mb-4">เพิ่มคลาสใหม่</h3>
+          <form @submit.prevent="addClass" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">ประเภทคลาส</label>
+              <select
+                v-model="newClass.type"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+                <option v-for="classType in CLASS_TYPES" :key="classType.value" :value="classType.value">
+                  {{ classType.icon }} {{ classType.label }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">คลาส</label>
+              <select
+                v-model="newClass.subtype"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+                <option value="" disabled>เลือกคลาส</option>
+                <option v-for="subtype in availableSubtypes" :key="subtype.value" :value="subtype.value">
+                  {{ subtype.label }}
+                </option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">ชื่อและรายละเอียดจะถูกกำหนดอัตโนมัติตามคลาสที่เลือก</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">วันที่</label>
+              <input
+                v-model="newClass.date"
+                type="date"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">เวลา</label>
+              <input
+                v-model="newClass.time"
+                type="time"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">ครูผู้สอน</label>
+              <input
+                v-model="newClass.instructor"
+                type="text"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">จำนวนคนสูงสุด</label>
+              <input
+                v-model.number="newClass.maxCapacity"
+                type="number"
+                min="1"
+                required
+                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-base"
+              >
+            </div>
+            <div class="flex gap-3 pt-1">
+              <button
+                type="button"
+                @click="showAddClassModal = false"
+                class="btn-secondary flex-1 py-3"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                class="btn-primary flex-1 py-3"
+                :disabled="addingClass"
+              >
+                {{ addingClass ? 'กำลังเพิ่ม...' : 'เพิ่มคลาส' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
     
