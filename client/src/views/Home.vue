@@ -146,7 +146,7 @@
           <h3 class="section-title">ตารางคลาสรายเดือน</h3>
           <div class="card p-0 overflow-hidden">
             <img 
-              src="https://firebasestorage.googleapis.com/v0/b/blackcrm-b5ab2.firebasestorage.app/o/blackclass%2F259dce2f-909c-4da6-8102-478c8b951473.jpg?alt=media&token=f0ac0681-2146-49fe-8d29-51cd3f7bf08e" 
+              src="https://img5.pic.in.th/file/secure-sv1/2f21b6a9-8044-418b-9ffd-05a2d0cf6a5c.jpg" 
               alt="ตารางคลาสรายเดือน" 
               class="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
               @click="openScheduleImage"
@@ -254,7 +254,7 @@ const handleImageError = (event) => {
 
 const openScheduleImage = () => {
   // เปิดรูปในแท็บใหม่
-  window.open('https://firebasestorage.googleapis.com/v0/b/blackcrm-b5ab2.firebasestorage.app/o/blackclass%2F259dce2f-909c-4da6-8102-478c8b951473.jpg?alt=media&token=f0ac0681-2146-49fe-8d29-51cd3f7bf08e', '_blank')
+  window.open('https://img5.pic.in.th/file/secure-sv1/2f21b6a9-8044-418b-9ffd-05a2d0cf6a5c.jpg', '_blank')
 }
 
 const handleLogin = async () => {

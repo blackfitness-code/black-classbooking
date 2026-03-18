@@ -206,50 +206,48 @@
     </main>
 
     <!-- Booking Confirmation Modal -->
-    <div v-if="showConfirmModal" class="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div class="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm max-h-[90dvh] overflow-y-auto">
-        <div class="p-6">
-          <div class="text-center mb-5">
-            <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-1">ยืนยันการจอง</h3>
-            <p class="text-xs text-orange-600 leading-relaxed">
-              หมายเหตุ: สามารถยกเลิกได้เฉพาะก่อน 5 ชั่วโมงก่อนคลาสเริ่มเท่านั้น
-            </p>
+    <div v-if="showConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6">
+      <div class="bg-white rounded-3xl p-6 w-full max-w-sm">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
           </div>
-          
-          <div v-if="yogaClass" class="bg-gray-50 rounded-2xl p-4 mb-5 text-sm">
-            <div class="space-y-2">
-              <div class="flex justify-between gap-3">
-                <span class="text-gray-500 shrink-0">คลาส:</span>
-                <span class="font-medium text-right">{{ yogaClass.name }}</span>
-              </div>
-              <div class="flex justify-between gap-3">
-                <span class="text-gray-500 shrink-0">วันที่:</span>
-                <span class="font-medium text-right">{{ formatDate(yogaClass.date) }}</span>
-              </div>
-              <div class="flex justify-between gap-3">
-                <span class="text-gray-500 shrink-0">เวลา:</span>
-                <span class="font-medium text-right">{{ yogaClass.time }}</span>
-              </div>
-              <div class="flex justify-between gap-3">
-                <span class="text-gray-500 shrink-0">ครู:</span>
-                <span class="font-medium text-right">{{ yogaClass.instructor }}</span>
-              </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">ยืนยันการจอง</h3>
+          <p class="text-xs text-orange-600">
+            หมายเหตุ: สามารถยกเลิกได้เฉพาะก่อน 24 ชั่วโมงก่อนคลาสเริ่มเท่านั้น
+          </p>
+        </div>
+        
+        <div v-if="yogaClass" class="bg-gray-50 rounded-2xl p-4 mb-6">
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-gray-600">คลาส:</span>
+              <span class="font-medium">{{ yogaClass.name }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">วันที่:</span>
+              <span class="font-medium">{{ formatDate(yogaClass.date) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">เวลา:</span>
+              <span class="font-medium">{{ yogaClass.time }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">ครู:</span>
+              <span class="font-medium">{{ yogaClass.instructor }}</span>
             </div>
           </div>
-          
-          <div class="flex gap-3">
-            <button @click="showConfirmModal = false" class="btn-secondary flex-1 py-3">
-              ยกเลิก
-            </button>
-            <button @click="confirmBooking" class="btn-primary flex-1 py-3" :disabled="booking">
-              {{ booking ? 'กำลังจอง...' : 'ยืนยัน' }}
-            </button>
-          </div>
+        </div>
+        
+        <div class="flex space-x-3">
+          <button @click="showConfirmModal = false" class="btn-secondary flex-1">
+            ยกเลิก
+          </button>
+          <button @click="confirmBooking" class="btn-primary flex-1" :disabled="booking">
+            {{ booking ? 'กำลังจอง...' : 'ยืนยัน' }}
+          </button>
         </div>
       </div>
     </div>
