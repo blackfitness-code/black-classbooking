@@ -138,6 +138,15 @@
                   </svg>
                 </button>
                 <button
+                  @click="openAddMemberModal(yogaClass)"
+                  class="text-green-500 hover:text-green-700"
+                  title="เพิ่มสมาชิกเข้าคลาส"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                  </svg>
+                </button>
+                <button
                   @click="editClass(yogaClass)"
                   class="text-blue-500 hover:text-blue-700"
                   title="แก้ไขคลาส"
@@ -589,8 +598,8 @@
     </main>
 
     <!-- Edit Class Modal -->
-    <div v-if="showEditClassModal" class="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-sm max-h-[90dvh] overflow-y-auto">
+    <div v-if="showEditClassModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl w-full sm:max-w-sm max-h-[90dvh] overflow-y-auto">
         <div class="p-6">
           <h3 class="text-base font-semibold mb-4">แก้ไขคลาส</h3>
           <form @submit.prevent="updateClass" class="space-y-4">
@@ -679,8 +688,8 @@
     </div>
 
     <!-- Add Class Modal -->
-    <div v-if="showAddClassModal" class="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-sm max-h-[90dvh] overflow-y-auto">
+    <div v-if="showAddClassModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl w-full sm:max-w-sm max-h-[90dvh] overflow-y-auto">
         <div class="p-6">
           <h3 class="text-base font-semibold mb-4">เพิ่มคลาสใหม่</h3>
           <form @submit.prevent="addClass" class="space-y-4">
@@ -768,7 +777,69 @@
       </div>
     </div>
     
-    <!-- Loading Overlays -->
+    <!-- Add Member to Class Modal -->
+    <div v-if="showAddMemberModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl w-full max-w-sm max-h-[90dvh] flex flex-col">
+        <div class="p-5 border-b border-gray-100">
+          <h3 class="text-base font-semibold">เพิ่มสมาชิกเข้าคลาส</h3>
+          <p class="text-sm text-gray-500 mt-0.5">{{ addMemberTargetClass?.name }} — {{ addMemberTargetClass ? formatDate(addMemberTargetClass.date) : '' }} {{ addMemberTargetClass?.time }}</p>
+          <!-- Search -->
+          <div class="relative mt-3">
+            <input
+              v-model="addMemberSearch"
+              type="text"
+              placeholder="ค้นหาสมาชิก..."
+              class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+            <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+        </div>
+
+        <!-- User list -->
+        <div class="overflow-y-auto flex-1 p-3 space-y-2">
+          <div
+            v-for="user in filteredAddMemberUsers"
+            :key="user.id"
+            @click="toggleMemberSelection(user)"
+            :class="[
+              'flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all',
+              selectedMembersToAdd.includes(user.lineUserId)
+                ? 'bg-primary/10 border-2 border-primary'
+                : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+            ]"
+          >
+            <img
+              :src="user.pictureUrl || '/default-avatar.png'"
+              class="w-10 h-10 rounded-full object-cover shrink-0"
+            >
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-sm truncate">{{ user.nickname || user.displayName || 'ไม่มีชื่อ' }}</p>
+              <p v-if="user.firstName || user.lastName" class="text-xs text-gray-500 truncate">{{ user.firstName }} {{ user.lastName }}</p>
+            </div>
+            <div v-if="isAlreadyBooked(user)" class="text-xs text-gray-400 shrink-0">จองแล้ว</div>
+            <svg v-else-if="selectedMembersToAdd.includes(user.lineUserId)" class="w-5 h-5 text-primary shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+          </div>
+          <p v-if="filteredAddMemberUsers.length === 0" class="text-center text-sm text-gray-400 py-6">ไม่พบสมาชิก</p>
+        </div>
+
+        <div class="p-4 border-t border-gray-100 flex gap-3">
+          <button @click="showAddMemberModal = false" class="btn-secondary flex-1 py-3">
+            ยกเลิก
+          </button>
+          <button
+            @click="confirmAddMembers"
+            :disabled="selectedMembersToAdd.length === 0 || addingMember"
+            class="btn-primary flex-1 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ addingMember ? 'กำลังเพิ่ม...' : `เพิ่ม (${selectedMembersToAdd.length})` }}
+          </button>
+        </div>
+      </div>
+    </div>
     <LoadingOverlay 
       :show="loadingClasses" 
       title="กำลังโหลดคลาส"
@@ -791,7 +862,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { db } from '../firebase'
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, Timestamp } from 'firebase/firestore'
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, Timestamp, increment } from 'firebase/firestore'
 import { format, addDays } from 'date-fns'
 import { th } from 'date-fns/locale'
 import Swal from 'sweetalert2'
@@ -1740,6 +1811,87 @@ watch([bookingSearch, bookingStatusFilter, bookingDateFilter, bookingSortBy], ()
 watch(classDateFilter, () => {
   currentClassPage.value = 1
 })
+
+// Add Member to Class
+const showAddMemberModal = ref(false)
+const addMemberTargetClass = ref(null)
+const addMemberSearch = ref('')
+const selectedMembersToAdd = ref([])
+const addingMember = ref(false)
+
+const openAddMemberModal = (yogaClass) => {
+  addMemberTargetClass.value = yogaClass
+  addMemberSearch.value = ''
+  selectedMembersToAdd.value = []
+  showAddMemberModal.value = true
+}
+
+const isAlreadyBooked = (user) => {
+  if (!addMemberTargetClass.value) return false
+  return classBookings.value.some(
+    b => b.classId === addMemberTargetClass.value.id &&
+         b.userId === user.lineUserId &&
+         b.status !== 'cancelled'
+  )
+}
+
+const filteredAddMemberUsers = computed(() => {
+  const search = addMemberSearch.value.toLowerCase()
+  return users.value.filter(user => {
+    if (!search) return true
+    return [user.nickname, user.displayName, user.firstName, user.lastName]
+      .filter(Boolean).join(' ').toLowerCase().includes(search)
+  })
+})
+
+const toggleMemberSelection = (user) => {
+  if (isAlreadyBooked(user)) return
+  const idx = selectedMembersToAdd.value.indexOf(user.lineUserId)
+  if (idx === -1) {
+    selectedMembersToAdd.value.push(user.lineUserId)
+  } else {
+    selectedMembersToAdd.value.splice(idx, 1)
+  }
+}
+
+const confirmAddMembers = async () => {
+  if (!addMemberTargetClass.value || selectedMembersToAdd.value.length === 0) return
+  addingMember.value = true
+  const yogaClass = addMemberTargetClass.value
+  try {
+    for (const lineUserId of selectedMembersToAdd.value) {
+      const user = users.value.find(u => u.lineUserId === lineUserId)
+      if (!user) continue
+      await addDoc(collection(db, 'bookings'), {
+        userId: lineUserId,
+        classId: yogaClass.id,
+        className: yogaClass.name,
+        date: yogaClass.date,
+        time: yogaClass.time,
+        instructor: yogaClass.instructor,
+        status: 'confirmed',
+        bookedAt: new Date(),
+        canCancelUntil: new Date(`${yogaClass.date}T${yogaClass.time}:00`)
+      })
+      await updateDoc(doc(db, 'classes', yogaClass.id), {
+        currentBookings: increment(1)
+      })
+    }
+    showAddMemberModal.value = false
+    await loadAllData(true)
+    Swal.fire({
+      title: 'สำเร็จ!',
+      text: `เพิ่มสมาชิก ${selectedMembersToAdd.value.length} คน เข้าคลาสสำเร็จ!`,
+      icon: 'success',
+      confirmButtonText: 'ตกลง'
+    })
+  } catch (error) {
+    console.error('Error adding members:', error)
+    Swal.fire({ title: 'เกิดข้อผิดพลาด!', text: 'ไม่สามารถเพิ่มสมาชิกได้', icon: 'error', confirmButtonText: 'ตกลง' })
+  } finally {
+    addingMember.value = false
+  }
+}
 
 onMounted(async () => {
   // โหลดข้อมูลทั้งหมดครั้งเดียว
