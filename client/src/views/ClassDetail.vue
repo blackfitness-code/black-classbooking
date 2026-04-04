@@ -268,7 +268,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { db } from '../firebase'
-import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, increment } from 'firebase/firestore'
+import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, increment, runTransaction } from 'firebase/firestore'
 import { format } from 'date-fns'
 import { th } from 'date-fns/locale'
 import Swal from 'sweetalert2'
@@ -398,25 +398,34 @@ const confirmBooking = async () => {
   
   booking.value = true
   try {
-    const bookingData = {
-      userId: authStore.userProfile.lineUserId,
-      classId: yogaClass.value.id,
-      className: yogaClass.value.name,
-      date: yogaClass.value.date,
-      time: yogaClass.value.time,
-      instructor: yogaClass.value.instructor,
-      status: 'confirmed',
-      bookedAt: new Date(),
-      canCancelUntil: new Date(`${yogaClass.value.date}T${yogaClass.value.time}:00`)
-    }
+    const classRef = doc(db, 'classes', yogaClass.value.id)
     
-    await addDoc(collection(db, 'bookings'), bookingData)
-    await updateDoc(doc(db, 'classes', yogaClass.value.id), {
-      currentBookings: increment(1)
+    await runTransaction(db, async (transaction) => {
+      const classSnap = await transaction.get(classRef)
+      if (!classSnap.exists()) throw new Error('ไม่พบข้อมูลคลาส')
+      
+      const classData = classSnap.data()
+      if (classData.currentBookings >= classData.maxCapacity) {
+        throw new Error('คลาสเต็มแล้ว')
+      }
+      
+      const bookingRef = doc(collection(db, 'bookings'))
+      transaction.set(bookingRef, {
+        userId: authStore.userProfile.lineUserId,
+        classId: yogaClass.value.id,
+        className: yogaClass.value.name,
+        date: yogaClass.value.date,
+        time: yogaClass.value.time,
+        instructor: yogaClass.value.instructor,
+        status: 'confirmed',
+        bookedAt: new Date(),
+        canCancelUntil: new Date(`${yogaClass.value.date}T${yogaClass.value.time}:00`)
+      })
+      
+      transaction.update(classRef, { currentBookings: increment(1) })
     })
     
     await loadClassDetail()
-    
     showConfirmModal.value = false
     
     Swal.fire({
@@ -429,7 +438,7 @@ const confirmBooking = async () => {
     console.error('Error booking class:', error)
     Swal.fire({
       title: 'เกิดข้อผิดพลาด!',
-      text: 'เกิดข้อผิดพลาดในการจอง',
+      text: error.message === 'คลาสเต็มแล้ว' ? 'คลาสเต็มแล้ว กรุณาเลือกคลาสอื่น' : 'เกิดข้อผิดพลาดในการจอง',
       icon: 'error',
       confirmButtonText: 'ตกลง'
     })
