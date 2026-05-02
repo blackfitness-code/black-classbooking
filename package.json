@@ -3,16 +3,24 @@
   "version": "1.0.0",
   "description": "LINE LIFF Yoga Class Booking System",
   "main": "server/index.js",
+  "type": "module",
   "scripts": {
     "dev": "cd client && npm run dev",
     "build": "cd client && npm run build",
-    "deploy": "npm run build && firebase deploy --only hosting"
+    "deploy": "npm run build && firebase deploy --only hosting",
+    "create-classes": "node scripts/create-monday-classes.js",
+    "create-classes:4weeks": "node scripts/create-monday-classes.js --weeks 4",
+    "create-classes:dry-run": "node scripts/create-monday-classes.js --dry-run",
+    "create-weekly": "node scripts/create-weekly-classes.js",
+    "create-weekly:4weeks": "node scripts/create-weekly-classes.js --weeks 4",
+    "create-weekly:dry-run": "node scripts/create-weekly-classes.js --dry-run"
   },
   "devDependencies": {
     "baseline-browser-mapping": "^2.10.0",
     "concurrently": "^8.2.2"
   },
   "dependencies": {
+    "firebase": "^12.12.1",
     "vite": "^7.3.1"
   }
 }
