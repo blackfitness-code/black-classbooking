@@ -129,20 +129,49 @@ const buildTemplateByDayOfWeek = async () => {
 }
 
 /**
- * หาวันที่ในช่วงสัปดาห์ถัดไป N สัปดาห์
- * เริ่มจากวันจันทร์ถัดไป (หรือวันนี้ถ้าเป็นจันทร์)
+ * หาวันจันทร์ของสัปดาห์แรกที่ยังไม่มีคลาสใน Firestore
+ * โดยเริ่มตรวจจากสัปดาห์ถัดไป
  */
-const getUpcomingDates = (weeksCount) => {
+const findNextWeekWithoutClasses = async (weeksToCheck = 8) => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
   const dow = today.getDay()
   const daysUntilMonday = dow === 1 ? 0 : (8 - dow) % 7 || 7
 
-  const startMonday = new Date(today)
-  startMonday.setDate(today.getDate() + daysUntilMonday)
+  const firstMonday = new Date(today)
+  firstMonday.setDate(today.getDate() + daysUntilMonday)
 
-  const dates = [] // [{ dateStr, dow }]
+  for (let week = 0; week < weeksToCheck; week++) {
+    const monday = new Date(firstMonday)
+    monday.setDate(firstMonday.getDate() + (week * 7))
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+
+    const fromStr = toLocalDateStr(monday)
+    const toStr = toLocalDateStr(sunday)
+
+    const snapshot = await getDocs(query(
+      collection(db, 'classes'),
+      where('date', '>=', fromStr),
+      where('date', '<=', toStr)
+    ))
+
+    if (snapshot.empty) {
+      return { monday, fromStr, toStr, weekIndex: week }
+    }
+
+    console.log(`   สัปดาห์ ${fromStr} ถึง ${toStr} → มีคลาสอยู่แล้ว (${snapshot.size} คลาส) ข้ามไป`)
+  }
+
+  return null
+}
+
+/**
+ * หาวันที่ในช่วง N สัปดาห์ เริ่มจาก startMonday
+ */
+const getDatesFromMonday = (startMonday, weeksCount) => {
+  const dates = []
   for (let week = 0; week < weeksCount; week++) {
     for (let d = 0; d < 7; d++) {
       const date = new Date(startMonday)
@@ -150,12 +179,11 @@ const getUpcomingDates = (weeksCount) => {
       dates.push({ dateStr: toLocalDateStr(date), dow: date.getDay() })
     }
   }
-
   return dates
 }
 
 const createClasses = async (weeksCount = 1, dryRun = false) => {
-  console.log(`\n🚀 สร้างคลาส ${weeksCount} สัปดาห์ข้างหน้า${dryRun ? ' (DRY RUN)' : ''}`)
+  console.log(`\n🚀 สร้างคลาส ${weeksCount} สัปดาห์${dryRun ? ' (DRY RUN)' : ''}`)
   console.log('='.repeat(60))
 
   const templatesByDay = await buildTemplateByDayOfWeek()
@@ -165,9 +193,20 @@ const createClasses = async (weeksCount = 1, dryRun = false) => {
     return
   }
 
-  const upcomingDates = getUpcomingDates(weeksCount)
+  // หาสัปดาห์แรกที่ยังไม่มีคลาส
+  console.log('\n🔍 กำลังหาสัปดาห์ที่ยังไม่มีคลาส...')
+  const target = await findNextWeekWithoutClasses()
 
-  console.log(`\n\n📅 สร้างคลาสสำหรับ ${upcomingDates.length} วัน (${weeksCount} สัปดาห์):`)
+  if (!target) {
+    console.log('\n✅ มีคลาสครบทุกสัปดาห์แล้ว (ตรวจสอบล่วงหน้า 8 สัปดาห์)')
+    return
+  }
+
+  console.log(`\n📅 จะสร้างคลาสเริ่มจากสัปดาห์: ${target.fromStr} ถึง ${target.toStr}`)
+
+  const upcomingDates = getDatesFromMonday(target.monday, weeksCount)
+
+  console.log(`\n📅 สร้างคลาสสำหรับ ${upcomingDates.length} วัน (${weeksCount} สัปดาห์):`)
   console.log('='.repeat(60))
 
   let totalCreated = 0
@@ -176,17 +215,16 @@ const createClasses = async (weeksCount = 1, dryRun = false) => {
 
   for (const { dateStr, dow } of upcomingDates) {
     const templates = templatesByDay[dow]
-    if (!templates) continue // วันนี้ไม่มีคลาส
+    if (!templates) continue
 
     const sorted = Object.values(templates).sort((a, b) => a.time.localeCompare(b.time))
     console.log(`\n📆 ${formatDateThai(dateStr)}`)
     totalDays++
 
     for (const template of sorted) {
-      const label = `  ${template.time}  ${template.name} (${template.type}) ครู ${template.instructor}`
+      const label = `  ${template.time}  ${template.name} (${template.type || 'ไม่ระบุ'}) ครู ${template.instructor}`
 
       if (!dryRun) {
-        // ตรวจสอบว่ามีคลาสนี้อยู่แล้วหรือไม่
         const existing = await getDocs(query(
           collection(db, 'classes'),
           where('date', '==', dateStr),
@@ -201,14 +239,8 @@ const createClasses = async (weeksCount = 1, dryRun = false) => {
         }
 
         await addDoc(collection(db, 'classes'), {
-          type: template.type,
-          subtype: template.subtype,
-          name: template.name,
-          description: template.description || '',
+          ...template,
           date: dateStr,
-          time: template.time,
-          instructor: template.instructor,
-          maxCapacity: template.maxCapacity,
           currentBookings: 0,
           createdAt: new Date()
         })
