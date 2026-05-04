@@ -238,7 +238,7 @@ const availableDates = computed(() => {
   })
 
   const dates = []
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 7; i++) {
     const date = addDays(new Date(), i)
     dates.push({
       dateString: format(date, 'yyyy-MM-dd'),
@@ -301,11 +301,11 @@ const canBook = (yogaClass) => {
     classDateTime: classDateTime.toISOString(),
     now: now.toISOString(),
     minutesDiff: minutesDiff,
-    canBook: minutesDiff > 30 && minutesDiff <= (14 * 24 * 60)
+    canBook: minutesDiff > 30 && minutesDiff <= (7 * 24 * 60)
   })
 
-  // Can book if class is more than 30 minutes away and within 14 days
-  return minutesDiff > 30 && minutesDiff <= (14 * 24 * 60)
+  // Can book if class is more than 30 minutes away and within 7 days
+  return minutesDiff > 30 && minutesDiff <= (7 * 24 * 60)
 }
 
 const getBookingButtonText = (yogaClass) => {
@@ -336,7 +336,7 @@ const getBookingButtonText = (yogaClass) => {
   
   if (minutesDiff <= 0) return 'คลาสเริ่มแล้ว'
   if (minutesDiff <= 30) return 'ปิดรับจองแล้ว (จองได้ก่อนคลาส 30 นาที)'
-  if (minutesDiff > (14 * 24 * 60)) return 'ยังไม่เปิดรับจอง'
+  if (minutesDiff > (7 * 24 * 60)) return 'ยังไม่เปิดรับจอง'
   
   return 'จองคลาส'
 }
