@@ -1,14 +1,14 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50">
+  <div class="page-container">
     <!-- Header -->
-    <header class="bg-gradient-to-r from-orange-500 to-pink-500 shadow-lg sticky top-0 z-10">
+    <header class="page-header">
       <div class="max-w-md mx-auto px-4 py-4 flex items-center">
         <button @click="$router.go(-1)" class="mr-4 text-white hover:bg-white/20 rounded-lg p-2 transition-all">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
           </svg>
         </button>
-        <h1 class="text-xl font-bold text-white flex-1">จัดการระบบ</h1>
+        <h1 class="page-title">จัดการระบบ</h1>
         <button
           @click="refreshData"
           :disabled="loadingClasses || loadingUsers || loadingBookings"
