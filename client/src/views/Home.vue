@@ -146,7 +146,7 @@
           <h3 class="section-title">ตารางคลาสรายเดือน</h3>
           <div class="card p-0 overflow-hidden">
             <img 
-              src="https://firebasestorage.googleapis.com/v0/b/blackcrm-b5ab2.firebasestorage.app/o/blackclass%2F259dce2f-909c-4da6-8102-478c8b951473.jpg?alt=media&token=f0ac0681-2146-49fe-8d29-51cd3f7bf08e" 
+              src="https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/wuBa17AVf2z9s8TXU2fU9l6O-beGDt2VAS4h6i7ZZ2qYrHgsNMRnrgupAx92JCQkUwfXMTQS8DzLOIeNpwZKj8hRNuTBMYo60y7gogwll0IBEsmgGbVu13VjXRmyAlky-Y6RmCFYWj9R9NUu3GhWkQ%3D%3D.jpg?alt=media&token=970ad9ba-07e6-4ffa-9e29-877a741a865b" 
               alt="ตารางคลาสรายเดือน" 
               class="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
               @click="openScheduleImage"
@@ -254,7 +254,7 @@ const handleImageError = (event) => {
 
 const openScheduleImage = () => {
   // เปิดรูปในแท็บใหม่
-  window.open('https://firebasestorage.googleapis.com/v0/b/blackcrm-b5ab2.firebasestorage.app/o/blackclass%2F259dce2f-909c-4da6-8102-478c8b951473.jpg?alt=media&token=f0ac0681-2146-49fe-8d29-51cd3f7bf08e', '_blank')
+  window.open('https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/wuBa17AVf2z9s8TXU2fU9l6O-beGDt2VAS4h6i7ZZ2qYrHgsNMRnrgupAx92JCQkUwfXMTQS8DzLOIeNpwZKj8hRNuTBMYo60y7gogwll0IBEsmgGbVu13VjXRmyAlky-Y6RmCFYWj9R9NUu3GhWkQ%3D%3D.jpg?alt=media&token=970ad9ba-07e6-4ffa-9e29-877a741a865b', '_blank')
 }
 
 const handleLogin = async () => {
