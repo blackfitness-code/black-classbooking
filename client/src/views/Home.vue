@@ -179,16 +179,54 @@
     </main>
     
     <!-- Loading Overlay -->
-    <LoadingOverlay 
-      :show="isLoading" 
+    <LoadingOverlay
+      :show="isLoading"
       title="กำลังโหลดข้อมูล"
       subtitle="กรุณารอสักครู่..."
     />
+
+    <!-- Update Notice Modal -->
+    <div v-if="showUpdateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
+      <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-xl">
+
+        <!-- Hero -->
+        <div class="flex flex-col items-center pt-8 pb-5 px-6 bg-primary">
+          <span class="text-6xl mb-3" style="filter: drop-shadow(0 8px 20px rgba(0,0,0,0.25));">📣</span>
+          <span class="text-xs font-medium tracking-widest uppercase text-white/60 mb-1">What's New</span>
+          <h2 class="text-xl font-bold text-white">มีอะไรใหม่?</h2>
+        </div>
+
+        <div class="px-6 py-5">
+          <!-- Feature item -->
+          <div class="flex items-center gap-4 p-4 rounded-2xl mb-5 bg-water border border-primary/20">
+            <div class="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+              </svg>
+            </div>
+            <div>
+              <p class="font-semibold text-dark text-sm">อัพเดตระบบจองคลาส ให้สามารถจองล่วงหน้าได้ 14 วัน</p>
+             
+            </div>
+          </div>
+
+          <!-- Don't show again -->
+          <label class="flex items-center gap-2 cursor-pointer select-none mb-4">
+            <input v-model="dontShowAgain" type="checkbox" class="w-4 h-4 rounded accent-primary">
+            <span class="text-sm text-gray-400">ไม่แสดงอีก</span>
+          </label>
+
+          <button @click="closeUpdateModal" class="btn-primary w-full py-3">
+            รับทราบ
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLiffStore } from '../stores/liff'
 import { useAuthStore } from '../stores/auth'
@@ -201,6 +239,18 @@ const liffStore = useLiffStore()
 const authStore = useAuthStore()
 
 const isDev = import.meta.env.DEV
+
+// Update notice modal
+const UPDATE_KEY = 'update_notice_v1'
+const showUpdateModal = ref(false)
+const dontShowAgain = ref(false)
+
+const closeUpdateModal = () => {
+  if (dontShowAgain.value) {
+    localStorage.setItem(UPDATE_KEY, 'dismissed')
+  }
+  showUpdateModal.value = false
+}
 
 const membershipStatus = computed(() => {
   if (!authStore.userProfile?.membershipExpiry) return 'ระบบกำลังตรวจสอบข้อมูล'
@@ -311,6 +361,11 @@ const goToProfileSetup = async () => {
 }
 
 onMounted(async () => {
+  // Show update modal if not dismissed
+  if (localStorage.getItem(UPDATE_KEY) !== 'dismissed') {
+    showUpdateModal.value = true
+  }
+
   // Load from storage first for immediate display
   await authStore.loadUserFromStorage()
   
