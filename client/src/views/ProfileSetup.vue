@@ -13,21 +13,21 @@
       <div class="card mb-6">
         <div class="flex items-center space-x-4 mb-4">
           <div class="relative">
-            <img 
-              :src="profilePictureUrl" 
+            <img
+              v-if="profilePictureUrl"
+              :src="profilePictureUrl"
               :alt="liffStore.profile?.displayName"
               class="w-16 h-16 rounded-full object-cover"
-              @error="handleImageError"
+              @error="onImageError"
             >
-            <button 
-              @click="refreshProfile"
-              class="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors"
-              title="รีเฟรชรูปโปรไฟล์"
+            <div
+              v-else
+              class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center"
             >
-              <svg class="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
               </svg>
-            </button>
+            </div>
           </div>
           <div>
             <h2 class="text-lg font-semibold">{{ liffStore.profile?.displayName }}</h2>
@@ -377,20 +377,19 @@ const validateForm = () => {
 }
 
 const profilePictureUrl = computed(() => {
-  return liffStore.getProfilePictureUrl() || liffStore.profile?.pictureUrl
+  const url = liffStore.profile?.pictureUrl
+  if (!url) return null
+  try {
+    const u = new URL(url)
+    u.searchParams.set('t', Date.now().toString())
+    return u.toString()
+  } catch {
+    return url
+  }
 })
 
-const refreshProfile = async () => {
-  try {
-    await liffStore.refreshProfile()
-  } catch (error) {
-    console.error('Failed to refresh profile:', error)
-  }
-}
-
-const handleImageError = (event) => {
-  console.log('Image load error, attempting to refresh profile')
-  refreshProfile()
+const onImageError = (event) => {
+  event.target.style.display = 'none'
 }
 
 // Clear errors when user starts typing
