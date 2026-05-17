@@ -1,7 +1,11 @@
 <template>
   <div id="app" class="min-h-screen bg-gray-50">
     <div class="app-content-spacing">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </div>
     <BottomNav />
     <DevTools />
