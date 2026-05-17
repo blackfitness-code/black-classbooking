@@ -33,13 +33,21 @@
         <div class="flex items-center space-x-4">
           <div class="relative">
             <img
+              v-if="profilePictureUrl"
               :src="profilePictureUrl"
               :alt="liffStore.profile?.displayName"
               class="w-14 h-14 rounded-full object-cover"
               loading="lazy"
               @error="handleImageError"
-              @click="refreshProfile"
             >
+            <div
+              v-else
+              class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center"
+            >
+              <svg class="w-7 h-7 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+              </svg>
+            </div>
             <div v-if="authStore.isMembershipValid()" class="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>
             <button
               @click="refreshProfile"
@@ -155,7 +163,7 @@
           <h3 class="section-title">ตารางคลาสรายเดือน</h3>
           <div class="card p-0 overflow-hidden">
             <img
-              src="https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/wuBa17AVf2z9s8TXU2fU9l6O-beGDt2VAS4h6i7ZZ2qYrHgsNMRnrgupAx92JCQkUwfXMTQS8DzLOIeNpwZKj8hRNuTBMYo60y7gogwll0IBEsmgGbVu13VjXRmyAlky-Y6RmCFYWj9R9NUu3GhWkQ%3D%3D.jpg?alt=media&token=970ad9ba-07e6-4ffa-9e29-877a741a865b"
+              src="https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/0e273eec-2a36-4123-9513-8d8b5ef34c3f.jpg?alt=media&token=489a6750-a2ff-41e3-a246-7d917d2a757c"
               alt="ตารางคลาสรายเดือน"
               class="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
               loading="lazy"
@@ -246,9 +254,17 @@ const showMainMenu = computed(() =>
   authStore.isAuthenticated && !authStore.needsProfileSetup
 )
 
-const profilePictureUrl = computed(() =>
-  liffStore.getProfilePictureUrl() || liffStore.profile?.pictureUrl
-)
+const profilePictureUrl = computed(() => {
+  const url = liffStore.profile?.pictureUrl
+  if (!url) return null
+  try {
+    const u = new URL(url)
+    u.searchParams.set('t', Date.now().toString())
+    return u.toString()
+  } catch {
+    return url
+  }
+})
 
 const refreshProfile = async () => {
   try { await liffStore.refreshProfile() } catch {}
@@ -257,7 +273,7 @@ const refreshProfile = async () => {
 const handleImageError = () => { refreshProfile() }
 
 const openScheduleImage = () => {
-  window.open('https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/wuBa17AVf2z9s8TXU2fU9l6O-beGDt2VAS4h6i7ZZ2qYrHgsNMRnrgupAx92JCQkUwfXMTQS8DzLOIeNpwZKj8hRNuTBMYo60y7gogwll0IBEsmgGbVu13VjXRmyAlky-Y6RmCFYWj9R9NUu3GhWkQ%3D%3D.jpg?alt=media&token=970ad9ba-07e6-4ffa-9e29-877a741a865b', '_blank')
+  window.open('https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/0e273eec-2a36-4123-9513-8d8b5ef34c3f.jpg?alt=media&token=489a6750-a2ff-41e3-a246-7d917d2a757c', '_blank')
 }
 
 const handleLogin = async () => {

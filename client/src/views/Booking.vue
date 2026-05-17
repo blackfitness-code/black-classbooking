@@ -154,8 +154,8 @@
 
     <!-- Booking Confirmation Modal -->
     <transition name="modal">
-      <div v-if="showConfirmModal" class="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4" @click.self="showConfirmModal = false">
-        <div class="modal-content bg-white rounded-3xl w-full sm:max-w-sm max-h-[90dvh] overflow-y-auto">
+      <div v-if="showConfirmModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-6" @click.self="showConfirmModal = false">
+        <div class="modal-content bg-white rounded-3xl w-full max-w-sm max-h-[80dvh] overflow-y-auto">
           <div class="p-6">
             <div class="text-center mb-5">
               <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
