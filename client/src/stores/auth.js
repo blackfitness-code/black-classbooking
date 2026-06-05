@@ -12,6 +12,16 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   actions: {
+    // DEV: force the mock test user to Platinum + far-future expiry for design/demo
+    applyDevMock() {
+      if (!this.userProfile) return
+      const id = this.userProfile.lineUserId || this.userProfile.id
+      if (id === 'U1234567890abcdef1234567890abcdef') {
+        this.userProfile.memberType = 'platinum'
+        this.userProfile.membershipExpiry = new Date('2030-01-01')
+      }
+    },
+
     async signInWithLineUserId(lineUserId, displayName, pictureUrl) {
       this.isAuthenticated = true
       this.userProfile = { lineUserId, displayName, pictureUrl }
@@ -34,6 +44,8 @@ export const useAuthStore = defineStore('auth', {
           this.userProfile = { id: userDoc.id, ...userData, lineUserId, displayName, pictureUrl }
           this.isAdmin = userData.role === 'admin'
           this.needsProfileSetup = false
+
+          this.applyDevMock()
 
           localStorage.setItem('userProfile', JSON.stringify(this.userProfile))
           localStorage.removeItem('needsProfileSetup')
@@ -103,6 +115,7 @@ export const useAuthStore = defineStore('auth', {
           this.isAuthenticated = true
           this.isAdmin = this.userProfile.role === 'admin'
           this.needsProfileSetup = needsSetup === 'true'
+          this.applyDevMock()
           return this.userProfile
         } catch {}
       }
