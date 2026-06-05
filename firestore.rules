@@ -21,5 +21,10 @@ service cloud.firestore {
     match /checkins/{checkinId} {
       allow read, write: if true; // Allow all for now, implement admin check later
     }
+
+    // Settings collection - admin config (class types, etc.)
+    match /settings/{document} {
+      allow read, write: if true; // Allow all for now, implement admin check later
+    }
   }
 }
