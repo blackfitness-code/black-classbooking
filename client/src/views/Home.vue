@@ -94,7 +94,7 @@
               </svg>
             </div>
             <h2 class="text-xl font-semibold text-gray-900 mb-2">ยินดีต้อนรับ!</h2>
-            <p class="text-gray-700 mb-4">กรุณากรอกข้อมูลเบื้องต้นเพื่อเริ่มใช้งานระบบจองคลาสออกกำลังกาย</p>
+            <p class="text-gray-700 mb-4">กรุณากรอกข้อมูลเบื้องต้นเพื่อเริ่มใช้งาน</p>
           </div>
           <button @click="goToProfileSetup" class="btn-primary w-full">
             เริ่มกรอกข้อมูล
@@ -163,7 +163,7 @@
           <h3 class="section-title">ตารางคลาสรายเดือน</h3>
           <div class="card p-0 overflow-hidden">
             <img
-              src="https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/0e273eec-2a36-4123-9513-8d8b5ef34c3f.jpg?alt=media&token=489a6750-a2ff-41e3-a246-7d917d2a757c"
+              src="https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/85e92359-3955-43b4-ad03-2cbb03cf8723.jpg?alt=media&token=5476fd86-7316-4475-93bd-229eb3b36d30"
               alt="ตารางคลาสรายเดือน"
               class="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
               loading="lazy"
@@ -273,7 +273,7 @@ const refreshProfile = async () => {
 const handleImageError = () => { refreshProfile() }
 
 const openScheduleImage = () => {
-  window.open('https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/0e273eec-2a36-4123-9513-8d8b5ef34c3f.jpg?alt=media&token=489a6750-a2ff-41e3-a246-7d917d2a757c', '_blank')
+  window.open('https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/85e92359-3955-43b4-ad03-2cbb03cf8723.jpg?alt=media&token=5476fd86-7316-4475-93bd-229eb3b36d30', '_blank')
 }
 
 const handleLogin = async () => {
