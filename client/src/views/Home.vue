@@ -28,44 +28,17 @@
         </div>
       </div>
 
-      <!-- Profile Card -->
-      <div v-else-if="liffStore.isLoggedIn" class="card mb-6 animate-fade-in">
-        <div class="flex items-center space-x-4">
-          <div class="relative">
-            <img
-              v-if="profilePictureUrl"
-              :src="profilePictureUrl"
-              :alt="liffStore.profile?.displayName"
-              class="w-14 h-14 rounded-full object-cover"
-              loading="lazy"
-              @error="handleImageError"
-            >
-            <div
-              v-else
-              class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center"
-            >
-              <svg class="w-7 h-7 text-primary" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-              </svg>
-            </div>
-            <div v-if="authStore.isMembershipValid()" class="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>
-            <button
-              @click="refreshProfile"
-              class="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors"
-              title="รีเฟรชรูปโปรไฟล์"
-            >
-              <svg class="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
-            </button>
-          </div>
-          <div class="flex-1">
-            <h2 class="font-semibold text-gray-900">
-              {{ authStore.userProfile?.nickname || liffStore.profile?.displayName }}
-            </h2>
-            <p class="text-sm text-gray-500 mt-1">{{ membershipStatus }}</p>
-          </div>
-        </div>
+      <!-- Member Card -->
+      <div v-else-if="liffStore.isLoggedIn">
+        <MemberCard
+          :display-name="authStore.userProfile?.nickname || liffStore.profile?.displayName"
+          :profile-picture-url="profilePictureUrl"
+          :membership-expiry="authStore.userProfile?.membershipExpiry"
+          :member-type="authStore.userProfile?.memberType || 'gold'"
+          :member-id="authStore.userProfile?.lineUserId || liffStore.profile?.userId"
+          @image-error="handleImageError"
+          @refresh="refreshProfile"
+        />
       </div>
 
       <!-- Login Card -->
@@ -216,8 +189,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLiffStore } from '../stores/liff'
 import { useAuthStore } from '../stores/auth'
-import { format } from 'date-fns'
-import { th } from 'date-fns/locale'
+
+import MemberCard from '../components/MemberCard.vue'
 
 const router = useRouter()
 const liffStore = useLiffStore()
@@ -232,13 +205,6 @@ const closeUpdateModal = () => {
   showUpdateModal.value = false
 }
 
-const membershipStatus = computed(() => {
-  if (!authStore.userProfile?.membershipExpiry) return 'ระบบกำลังตรวจสอบข้อมูล'
-  const expiry = new Date(authStore.userProfile.membershipExpiry)
-  return expiry > new Date()
-    ? `หมดอายุ ${format(expiry, 'dd MMM yyyy', { locale: th })}`
-    : 'หมดอายุแล้ว'
-})
 
 const isLoading = computed(() =>
   !liffStore.isLiffReady ||

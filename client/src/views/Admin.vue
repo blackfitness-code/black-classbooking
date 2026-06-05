@@ -66,6 +66,19 @@
           <h3 class="font-semibold">ดูการจอง</h3>
           <p class="text-sm opacity-80">ประวัติการจองทั้งหมด</p>
         </button>
+
+        <button
+          @click="activeSection = 'checkin'"
+          :class="[
+            'w-full p-4 rounded-lg text-left transition-all',
+            activeSection === 'checkin'
+              ? 'bg-primary text-white'
+              : 'bg-white hover:bg-gray-50'
+          ]"
+        >
+          <h3 class="font-semibold">เช็คอินสมาชิก</h3>
+          <p class="text-sm opacity-80">สแกน QR เพื่อเช็คอิน</p>
+        </button>
       </div>
 
       <!-- Classes Management -->
@@ -257,7 +270,19 @@
       <div v-if="activeSection === 'users'" class="space-y-4">
         <div class="flex justify-between items-center">
           <h2 class="text-lg font-semibold">จัดการสมาชิก</h2>
-          <span class="text-sm text-gray-500">{{ filteredUsers.length }} คน</span>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-500">{{ filteredUsers.length }} คน</span>
+            <button
+              @click="exportUsersToCSV"
+              :disabled="filteredUsers.length === 0"
+              class="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Export CSV
+            </button>
+          </div>
         </div>
         
         <!-- Search and Filter -->
@@ -320,16 +345,28 @@
                   </span>
                 </p>
               </div>
-              <span
-                :class="[
-                  'text-xs px-2 py-1 rounded-full',
-                  isMembershipValid(user)
-                    ? 'bg-green-100 text-green-600'
-                    : 'bg-red-100 text-red-600'
-                ]"
-              >
-                {{ isMembershipValid(user) ? 'ใช้งานได้' : 'หมดอายุ' }}
-              </span>
+              <div class="flex flex-col items-end gap-1">
+                <span
+                  :class="[
+                    'text-xs px-2 py-0.5 rounded-full font-semibold',
+                    (user.memberType || 'gold') === 'platinum'
+                      ? 'bg-slate-100 text-slate-600'
+                      : 'bg-amber-100 text-amber-700'
+                  ]"
+                >
+                  {{ (user.memberType || 'gold') === 'platinum' ? 'Platinum' : 'Gold' }}
+                </span>
+                <span
+                  :class="[
+                    'text-xs px-2 py-0.5 rounded-full',
+                    isMembershipValid(user)
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-red-100 text-red-600'
+                  ]"
+                >
+                  {{ isMembershipValid(user) ? 'ใช้งานได้' : 'หมดอายุ' }}
+                </span>
+              </div>
             </div>
             
             <!-- Role Management -->
@@ -352,6 +389,23 @@
               </p>
             </div>
             
+            <!-- Member Type -->
+            <div class="space-y-2 mb-3">
+              <label class="block text-sm font-medium text-gray-700">
+                ประเภทสมาชิก
+              </label>
+              <div class="flex space-x-2">
+                <select
+                  :value="user.memberType || 'gold'"
+                  @change="updateMemberType(user, $event.target.value)"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                >
+                  <option value="gold">Gold</option>
+                  <option value="platinum">Platinum</option>
+                </select>
+              </div>
+            </div>
+
             <!-- Date Picker for Membership Expiry -->
             <div class="space-y-2">
               <label class="block text-sm font-medium text-gray-700">
@@ -606,6 +660,111 @@
               ถัดไป
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Check-in Scanner -->
+      <div v-if="activeSection === 'checkin'" class="space-y-4">
+        <h2 class="text-lg font-semibold">เช็คอินสมาชิก</h2>
+
+        <!-- Class context bar -->
+        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary/5 to-secondary/5">
+            <div class="flex items-center gap-2 min-w-0">
+              <svg class="w-5 h-5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              <p class="font-semibold text-gray-900 truncate">
+                {{ selectedCheckinClass ? selectedCheckinClass.name : 'เช็คอินเข้าร้าน (ไม่ระบุคลาส)' }}
+              </p>
+            </div>
+            <button @click="showClassPicker = !showClassPicker" class="text-sm text-primary font-medium shrink-0">
+              {{ showClassPicker ? 'ปิด' : 'เปลี่ยน' }}
+            </button>
+          </div>
+          <div class="px-4 py-2 flex items-center gap-4 text-xs text-gray-500 border-t border-gray-50">
+            <span>{{ formatThaiDate(checkinDate) }}</span>
+            <span v-if="selectedCheckinClass">⏰ {{ selectedCheckinClass.time }}</span>
+            <span v-if="selectedCheckinClass?.instructor">👤 {{ selectedCheckinClass.instructor }}</span>
+            <span class="ml-auto font-semibold text-primary">เข้าแล้ว {{ todayCheckins.length }} คน</span>
+          </div>
+
+          <!-- expandable picker -->
+          <div v-if="showClassPicker" class="px-4 py-3 border-t border-gray-100 space-y-2 bg-gray-50">
+            <input
+              v-model="checkinDate"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+            <select
+              v-model="selectedCheckinClassId"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">— ไม่ระบุคลาส (เช็คอินเข้าร้าน) —</option>
+              <option v-for="c in checkinClassOptions" :key="c.id" :value="c.id">
+                {{ c.time }} · {{ c.name }}{{ c.instructor ? ' · ' + c.instructor : '' }}
+              </option>
+            </select>
+            <p v-if="checkinDate && checkinClassOptions.length === 0" class="text-xs text-gray-400">
+              ไม่มีคลาสในวันที่เลือก
+            </p>
+          </div>
+        </div>
+
+        <!-- Scanner with big in-place result overlay -->
+        <CheckinScanner :result="lastCheckin" @detected="handleCheckinScan" />
+
+        <!-- Check-in list for selected date -->
+        <div class="space-y-2 pt-2">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="font-semibold text-gray-900 shrink-0">รายชื่อเช็คอิน · {{ todayCheckins.length }} คน</h3>
+            <div class="flex items-center gap-2">
+              <select
+                v-model="checkinSort"
+                class="text-xs px-2 py-1.5 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="time-desc">ล่าสุดก่อน</option>
+                <option value="time-asc">เข้าก่อน</option>
+                <option value="name">ตามชื่อ</option>
+                <option value="class">ตามคลาส</option>
+              </select>
+              <button @click="loadCheckins" class="text-sm text-primary flex items-center gap-1" :disabled="loadingCheckins">
+                <svg class="w-4 h-4" :class="{ 'animate-spin': loadingCheckins }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              </button>
+            </div>
+          </div>
+          <p v-if="!loadingCheckins && todayCheckins.length === 0" class="text-center text-sm text-gray-400 py-8 bg-white rounded-xl border border-dashed border-gray-200">
+            ยังไม่มีใครเช็คอิน
+          </p>
+          <transition-group name="list" tag="div" class="space-y-2">
+            <div
+              v-for="c in sortedCheckins"
+              :key="c.id"
+              class="flex items-center gap-3 bg-white rounded-xl p-3 border border-gray-100"
+            >
+              <img v-if="c.pictureUrl" :src="c.pictureUrl" class="w-10 h-10 rounded-full object-cover shrink-0" />
+              <div v-else class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12z"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-gray-900 truncate text-sm">{{ c.name }}</p>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span :class="[
+                    'text-[10px] font-bold px-1.5 py-0.5 rounded',
+                    (c.memberType || 'gold') === 'platinum' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700'
+                  ]">{{ (c.memberType || 'gold').toUpperCase() }}</span>
+                  <span v-if="c.className" class="text-xs text-gray-400 truncate">{{ c.className }}</span>
+                  <span v-if="c.membershipValid === false" class="text-[10px] text-red-500 font-medium">หมดอายุ</span>
+                </div>
+              </div>
+              <span class="text-sm font-medium text-gray-500 shrink-0">{{ c.time }}</span>
+              <button
+                @click="deleteCheckin(c)"
+                class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                title="ลบรายการ"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </transition-group>
         </div>
       </div>
     </main>
@@ -880,12 +1039,245 @@ import { format, addDays } from 'date-fns'
 import { th } from 'date-fns/locale'
 import Swal from 'sweetalert2'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
+import CheckinScanner from '../components/CheckinScanner.vue'
 import { CLASS_TYPES, getClassTypeInfo, getClassTypeColor, getClassSubtypes, getClassSubtypeInfo } from '../constants/classTypes'
 import { getCachedData, setCachedData, clearCache, CACHE_KEYS } from '../utils/cache'
 
 const authStore = useAuthStore()
 
 const activeSection = ref('classes')
+
+// ─── Check-in scanner ─────────────────────────────────────────
+const lastCheckin = ref(null)
+const todayCheckins = ref([])
+const checkinDate = ref(format(new Date(), 'yyyy-MM-dd'))
+const selectedCheckinClassId = ref('')
+const showClassPicker = ref(false)
+const checkinSort = ref('time-desc') // time-desc | time-asc | name | class
+let checkinBusy = false
+
+const sortedCheckins = computed(() => {
+  const rows = [...todayCheckins.value]
+  switch (checkinSort.value) {
+    case 'time-asc':
+      return rows.sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+    case 'name':
+      return rows.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th'))
+    case 'class':
+      return rows.sort((a, b) =>
+        (a.className || 'zzz').localeCompare(b.className || 'zzz', 'th') ||
+        (b.time || '').localeCompare(a.time || ''))
+    default: // time-desc
+      return rows.sort((a, b) => (b.time || '').localeCompare(a.time || ''))
+  }
+})
+
+const formatThaiDate = (d) => {
+  if (!d) return ''
+  try { return format(new Date(d), 'EEEE d MMM yyyy', { locale: th }) } catch { return d }
+}
+
+const loadingCheckins = ref(false)
+
+const checkinClassOptions = computed(() => {
+  if (!checkinDate.value) return []
+  return classes.value
+    .filter(c => c.date === checkinDate.value)
+    .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+})
+
+const selectedCheckinClass = computed(() =>
+  classes.value.find(c => c.id === selectedCheckinClassId.value) || null
+)
+
+// Load check-in records for the selected date from Firestore
+const loadCheckins = async () => {
+  if (!checkinDate.value) { todayCheckins.value = []; return }
+  loadingCheckins.value = true
+  try {
+    const snap = await getDocs(collection(db, 'checkins'))
+    const rows = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(c => (c.classDate || '') === checkinDate.value)
+      .map(c => ({
+        id: c.id,
+        uid: c.uid,
+        name: c.name,
+        memberType: c.memberType,
+        pictureUrl: users.value.find(u => u.id === c.uid)?.pictureUrl || '',
+        classId: c.classId || '',
+        className: c.className || '',
+        membershipValid: c.membershipValid,
+        time: c.checkedInAt?.toDate ? format(c.checkedInAt.toDate(), 'HH:mm') : ''
+      }))
+      .sort((a, b) => b.time.localeCompare(a.time))
+    todayCheckins.value = rows
+  } catch (e) {
+    console.error('load checkins failed:', e)
+  } finally {
+    loadingCheckins.value = false
+  }
+}
+
+// Delete a check-in record
+const deleteCheckin = async (c) => {
+  const result = await Swal.fire({
+    title: 'ลบรายการเช็คอิน?',
+    html: `ลบ <strong>${c.name || ''}</strong>${c.className ? ' · ' + c.className : ''} (${c.time}) หรือไม่?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'ลบ',
+    cancelButtonText: 'ยกเลิก'
+  })
+  if (!result.isConfirmed) return
+  try {
+    await deleteDoc(doc(db, 'checkins', c.id))
+    todayCheckins.value = todayCheckins.value.filter(x => x.id !== c.id)
+    Swal.fire({ title: 'ลบแล้ว', icon: 'success', timer: 1200, showConfirmButton: false })
+  } catch (e) {
+    console.error('delete checkin failed:', e)
+    Swal.fire({ title: 'ลบไม่สำเร็จ', text: e?.code || e?.message || '', icon: 'error', confirmButtonText: 'ตกลง' })
+  }
+}
+
+// Audio feedback via WebAudio (no asset needed)
+let audioCtx = null
+const beep = (ok) => {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)()
+    const o = audioCtx.createOscillator()
+    const g = audioCtx.createGain()
+    o.connect(g); g.connect(audioCtx.destination)
+    o.type = 'sine'
+    if (ok) {
+      o.frequency.value = 880
+      g.gain.setValueAtTime(0.15, audioCtx.currentTime)
+      o.start(); o.stop(audioCtx.currentTime + 0.12)
+    } else {
+      o.frequency.value = 220
+      g.gain.setValueAtTime(0.18, audioCtx.currentTime)
+      o.start(); o.stop(audioCtx.currentTime + 0.32)
+    }
+  } catch { /* ignore */ }
+}
+
+// Single entry point for showing a scan result (overlay + sound + haptic)
+let resultTimer = null
+const showResult = (result) => {
+  lastCheckin.value = result
+  beep(result.ok)
+  if (navigator.vibrate) navigator.vibrate(result.ok ? 60 : [80, 60, 80])
+  clearTimeout(resultTimer)
+  resultTimer = setTimeout(() => { lastCheckin.value = null }, result.ok ? 2200 : 3200)
+}
+
+const handleCheckinScan = async (raw) => {
+  if (checkinBusy) return
+  checkinBusy = true
+  try {
+    // Parse payload — accept JSON {uid} or plain uid string
+    let uid = ''
+    try {
+      const parsed = JSON.parse(raw)
+      uid = parsed.uid || ''
+      if (parsed.t && parsed.t !== 'checkin') throw new Error('wrong type')
+    } catch {
+      uid = (raw || '').trim()
+    }
+
+    if (!uid) {
+      showResult({ ok: false, title: 'QR ไม่ถูกต้อง', detail: 'ไม่พบรหัสสมาชิกใน QR' })
+      return
+    }
+
+    const MOCK_UID = 'U1234567890abcdef1234567890abcdef'
+    let user = users.value.find(u => u.id === uid || u.lineUserId === uid)
+
+    // DEMO: synthesize the mock user if it's not in the DB
+    if (!user && uid === MOCK_UID) {
+      user = { id: MOCK_UID, displayName: 'Test User', nickname: 'Test User', memberType: 'platinum' }
+    }
+    if (!user) {
+      showResult({ ok: false, title: 'ไม่พบสมาชิก', detail: `รหัส: ${uid}` })
+      return
+    }
+
+    // Membership validity (mock user always valid for demo)
+    const valid = uid === MOCK_UID ? true : isMembershipValid(user)
+
+    const cls = selectedCheckinClass.value
+    const className = cls ? cls.name : ''
+
+    // Prevent duplicate check-in for the same class (or same day if no class)
+    const already = todayCheckins.value.find(c =>
+      c.uid === uid && c.classId === (cls?.id || '')
+    )
+    if (already) {
+      showResult({
+        ok: false,
+        title: 'เช็คอินซ้ำ',
+        name: user.nickname || user.displayName,
+        detail: `${className ? className + ' · ' : ''}เช็คอินแล้วเมื่อ ${already.time}`,
+        pictureUrl: user.pictureUrl
+      })
+      return
+    }
+
+    const now = new Date()
+    const entry = {
+      id: now.getTime().toString(),
+      uid,
+      name: user.nickname || user.displayName || '',
+      memberType: user.memberType || 'gold',
+      pictureUrl: user.pictureUrl,
+      classId: cls?.id || '',
+      className,
+      time: format(now, 'HH:mm')
+    }
+
+    // Show result immediately (don't block on DB write)
+    todayCheckins.value.unshift(entry)
+    const where = className ? `เข้าคลาส ${className} · ` : ''
+    showResult(valid
+      ? { ok: true, title: 'เช็คอินสำเร็จ', name: entry.name, detail: `${where}${entry.time}`, pictureUrl: entry.pictureUrl }
+      : { ok: false, title: 'สมาชิกหมดอายุ', name: entry.name, detail: `${where}กรุณาต่ออายุ`, pictureUrl: entry.pictureUrl }
+    )
+
+    // Persist to Firestore (failures are surfaced, not swallowed)
+    try {
+      const ref = await addDoc(collection(db, 'checkins'), {
+        uid,
+        name: entry.name,
+        memberType: entry.memberType,
+        membershipValid: valid,
+        classId: cls?.id || '',
+        className,
+        classDate: cls?.date || checkinDate.value || '',
+        classTime: cls?.time || '',
+        instructor: cls?.instructor || '',
+        checkedInAt: Timestamp.fromDate(now)
+      })
+      // use the real Firestore doc id so the entry can be deleted immediately
+      entry.id = ref.id
+    } catch (e) {
+      console.error('checkin save failed:', e)
+      showResult({
+        ok: false,
+        title: 'บันทึกไม่สำเร็จ',
+        name: entry.name,
+        detail: `เขียนฐานข้อมูลไม่ได้: ${e?.code || e?.message || 'unknown'}`,
+        pictureUrl: entry.pictureUrl
+      })
+    }
+  } catch (e) {
+    console.error('checkin error:', e)
+    showResult({ ok: false, title: 'เกิดข้อผิดพลาด', detail: e?.message || String(e) })
+  } finally {
+    setTimeout(() => { checkinBusy = false }, 1500)
+  }
+}
 const classes = ref([])
 const users = ref([])
 const allBookings = ref([])
@@ -1729,6 +2121,64 @@ const exportBookingsToCSV = () => {
   })
 }
 
+const exportUsersToCSV = () => {
+  const list = filteredUsers.value
+  if (!list || list.length === 0) {
+    Swal.fire({ title: 'ไม่มีข้อมูล', text: 'ไม่มีข้อมูลสมาชิกให้ export', icon: 'warning', confirmButtonText: 'ตกลง' })
+    return
+  }
+
+  const headers = [
+    'LINE User ID',
+    'ชื่อเล่น', 'ชื่อจริง', 'นามสกุล', 'เบอร์โทร', 'วันเกิด', 'เพศ',
+    'ประเภทสมาชิก', 'วันหมดอายุ', 'สถานะสมาชิก', 'Role',
+    'ผู้ติดต่อฉุกเฉิน', 'เบอร์ฉุกเฉิน', 'ความสัมพันธ์',
+    'วันที่สมัคร'
+  ]
+
+  const toDateStr = (v) => {
+    if (!v) return ''
+    try {
+      const d = v?.toDate ? v.toDate() : new Date(v)
+      return isNaN(d.getTime()) ? '' : format(d, 'yyyy-MM-dd')
+    } catch { return '' }
+  }
+
+  const rows = list.map(u => [
+    u.lineUserId || u.id || '',
+    u.nickname || u.displayName || '',
+    u.firstName || '',
+    u.lastName || '',
+    u.phone || '',
+    toDateStr(u.birthDate),
+    u.gender || '',
+    (u.memberType || 'gold').toUpperCase(),
+    toDateStr(u.membershipExpiry),
+    isMembershipValid(u) ? 'ใช้งานได้' : 'หมดอายุ',
+    u.role === 'admin' ? 'Admin' : 'User',
+    u.emergencyContact?.name || '',
+    u.emergencyContact?.phone || '',
+    u.emergencyContact?.relationship || '',
+    toDateStr(u.createdAt)
+  ])
+
+  const esc = (cell) => `"${String(cell).replace(/"/g, '""')}"`
+  const csvContent = [headers.join(','), ...rows.map(r => r.map(esc).join(','))].join('\n')
+
+  const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.setAttribute('href', url)
+  link.setAttribute('download', `members-${format(new Date(), 'yyyy-MM-dd')}.csv`)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+
+  Swal.fire({ title: 'สำเร็จ!', text: `Export สมาชิก ${list.length} คนสำเร็จ!`, icon: 'success', confirmButtonText: 'ตกลง' })
+}
+
 const setMembershipExpiry = async (user) => {
   try {
     const selectedDate = selectedDates.value[user.id]
@@ -1767,6 +2217,18 @@ const setMembershipExpiry = async (user) => {
       icon: 'error',
       confirmButtonText: 'ตกลง'
     })
+  }
+}
+
+const updateMemberType = async (user, newType) => {
+  try {
+    await updateDoc(doc(db, 'users', user.id), {
+      memberType: newType,
+      updatedAt: new Date()
+    })
+    user.memberType = newType
+  } catch (error) {
+    console.error('Error updating member type:', error)
   }
 }
 
@@ -1911,11 +2373,21 @@ onMounted(async () => {
   loadingClasses.value = true
   loadingUsers.value = true
   loadingBookings.value = true
-  
+
   await loadAllData()
-  
+
   loadingClasses.value = false
   loadingUsers.value = false
   loadingBookings.value = false
 })
+
+// Load check-in records when opening the tab or changing date
+watch(activeSection, (s) => { if (s === 'checkin') loadCheckins() })
+watch(checkinDate, () => { if (activeSection.value === 'checkin') loadCheckins() })
 </script>
+
+<style scoped>
+.list-enter-active { transition: all 0.3s ease; }
+.list-enter-from { opacity: 0; transform: translateY(-8px); }
+.list-move { transition: transform 0.3s ease; }
+</style>

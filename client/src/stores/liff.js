@@ -5,7 +5,7 @@ const DEV_MODE = import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_PROFILE ==
 const MOCK_PROFILE = {
     userId: 'U1234567890abcdef1234567890abcdef',
     displayName: 'Test User',
-    pictureUrl: 'https://via.placeholder.com/150',
+    pictureUrl: 'https://scontent.fbkk29-9.fna.fbcdn.net/v/t39.30808-6/670997268_2337516446773374_5555059808719805758_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGkLNZiZmkYTkRahLL9__Icv_cLt8F99A-_9wu3wX30D6SmggbCJVJc33muBaF7hxR0NPDupKEzOZPgCDVAeOA-&_nc_ohc=6eBHpynWSuQQ7kNvwFnbBP0&_nc_oc=Adr6qYftj_F49nXyDeXiJV21ZsKBmBF1lYve-_989OeamT2YhMNcHFg-1aus-bomTfw&_nc_zt=23&_nc_ht=scontent.fbkk29-9.fna&_nc_gid=iLnu-BLSGCVo7CTuESO25Q&_nc_ss=7b2a8&oh=00_Af84Fi2zAmenT7U_96fZadLXk5lZ6Lyr_aMAXg9YtXZY7A&oe=6A259AED',
     statusMessage: 'Testing'
 }
 

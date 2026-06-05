@@ -16,5 +16,10 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow read, write: if true; // Allow all for now, implement user check later
     }
+
+    // Check-ins collection - QR check-in records (admin scanner)
+    match /checkins/{checkinId} {
+      allow read, write: if true; // Allow all for now, implement admin check later
+    }
   }
 }
