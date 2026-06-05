@@ -144,8 +144,25 @@
           <p class="text-gray-700 leading-relaxed whitespace-pre-line">{{ yogaClass.description }}</p>
         </div>
 
+        <!-- Cooldown Warning -->
+        <div v-if="authStore.isCooldownActive()" class="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-2xl p-4">
+          <div class="flex items-center">
+            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+              <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="font-medium text-red-800">ถูกระงับการจองชั่วคราว</p>
+              <p class="text-sm text-red-600">
+                จองได้อีกครั้งหลัง {{ authStore.getCooldownEndDate()?.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }) }}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <!-- Membership Warning -->
-        <div v-if="!authStore.isMembershipValid()" class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-4">
+        <div v-else-if="!authStore.isMembershipValid()" class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-4">
           <div class="flex items-center">
             <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-3">
               <svg class="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
@@ -321,6 +338,7 @@ const getClassStatusText = () => {
 
 const canBook = () => {
   if (!yogaClass.value) return false
+  if (authStore.isCooldownActive()) return false
   if (!authStore.isMembershipValid()) return false
   if (yogaClass.value.currentBookings >= yogaClass.value.maxCapacity) return false
   if (isAlreadyBooked.value) return false
@@ -334,6 +352,7 @@ const canBook = () => {
 
 const getBookingButtonText = () => {
   if (!yogaClass.value) return 'กำลังโหลด...'
+  if (authStore.isCooldownActive()) return 'ถูกระงับการจองชั่วคราว'
   if (!authStore.isMembershipValid()) {
     return !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ'
   }

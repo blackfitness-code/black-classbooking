@@ -162,6 +162,32 @@ export const useAuthStore = defineStore('auth', {
       } catch {
         return false
       }
+    },
+
+    isCooldownActive() {
+      if (!this.userProfile?.cooldownUntil) return false
+      try {
+        const cooldown = typeof this.userProfile.cooldownUntil?.toDate === 'function'
+          ? this.userProfile.cooldownUntil.toDate()
+          : new Date(this.userProfile.cooldownUntil)
+        if (isNaN(cooldown.getTime())) return false
+        return cooldown > new Date()
+      } catch {
+        return false
+      }
+    },
+
+    getCooldownEndDate() {
+      if (!this.userProfile?.cooldownUntil) return null
+      try {
+        const cooldown = typeof this.userProfile.cooldownUntil?.toDate === 'function'
+          ? this.userProfile.cooldownUntil.toDate()
+          : new Date(this.userProfile.cooldownUntil)
+        if (isNaN(cooldown.getTime())) return null
+        return cooldown
+      } catch {
+        return null
+      }
     }
   }
 })

@@ -16,5 +16,10 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow read, write: if true; // Allow all for now, implement user check later
     }
+
+    // Settings collection - admin config (class types, etc.)
+    match /settings/{document} {
+      allow read, write: if true; // Allow all for now, implement admin check later
+    }
   }
 }

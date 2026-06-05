@@ -71,17 +71,40 @@
       <!-- Login Card -->
       <div v-if="!liffStore.isLoggedIn && !isLoading" class="card text-center animate-fade-in">
         <div class="mb-6">
-          <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          <!-- LINE Logo -->
+          <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden" style="background:#06C755">
+            <svg class="w-10 h-10" viewBox="0 0 24 24" fill="white">
+              <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
             </svg>
           </div>
           <h2 class="text-xl font-semibold text-gray-900 mb-2">ยินดีต้อนรับ</h2>
-          <p class="text-gray-600">เข้าสู่ระบบเพื่อจองคลาสออกกำลังกาย</p>
+          <p class="text-gray-500 text-sm">เข้าสู่ระบบเพื่อจองคลาสออกกำลังกาย</p>
         </div>
-        <button @click="handleLogin" class="btn-primary w-full">
+
+        <!-- LIFF Error State -->
+        <div v-if="liffStore.initError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-left">
+          <p class="text-sm font-medium text-red-700 mb-1">ไม่สามารถเชื่อมต่อ LINE ได้</p>
+          <p class="text-xs text-red-500">{{ liffStore.initError }}</p>
+        </div>
+
+        <button
+          @click="handleLogin"
+          :disabled="!!liffStore.initError"
+          class="w-full py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          style="background:#06C755"
+          :class="{ 'hover:brightness-90 active:scale-95': !liffStore.initError }"
+        >
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="white">
+            <path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+          </svg>
           เข้าสู่ระบบด้วย LINE
         </button>
+
+        <!-- Desktop hint -->
+        <p v-if="!liffStore.isInClient && !liffStore.initError" class="text-xs text-gray-400 mt-3 leading-relaxed">
+          บน Desktop: กด Login แล้วกรอก Email/รหัสผ่าน LINE<br>
+          หรือสแกน QR code ด้วยแอป LINE บนมือถือ
+        </p>
       </div>
 
       <!-- Profile Setup Required -->
@@ -163,7 +186,7 @@
           <h3 class="section-title">ตารางคลาสรายเดือน</h3>
           <div class="card p-0 overflow-hidden">
             <img
-              src="https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/0e273eec-2a36-4123-9513-8d8b5ef34c3f.jpg?alt=media&token=489a6750-a2ff-41e3-a246-7d917d2a757c"
+              src="https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/85e92359-3955-43b4-ad03-2cbb03cf8723.jpg?alt=media&token=5476fd86-7316-4475-93bd-229eb3b36d30"
               alt="ตารางคลาสรายเดือน"
               class="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
               loading="lazy"
@@ -242,8 +265,8 @@ const membershipStatus = computed(() => {
 
 const isLoading = computed(() =>
   !liffStore.isLiffReady ||
-  (liffStore.isLiffReady && !liffStore.profile) ||
-  (liffStore.profile && !authStore.isAuthenticated)
+  (liffStore.isLiffReady && liffStore.isLoggedIn && !liffStore.profile) ||
+  (liffStore.isLoggedIn && liffStore.profile && !authStore.isAuthenticated)
 )
 
 const showProfileSetup = computed(() =>
@@ -273,12 +296,12 @@ const refreshProfile = async () => {
 const handleImageError = () => { refreshProfile() }
 
 const openScheduleImage = () => {
-  window.open('https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/0e273eec-2a36-4123-9513-8d8b5ef34c3f.jpg?alt=media&token=489a6750-a2ff-41e3-a246-7d917d2a757c', '_blank')
+  window.open('https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/85e92359-3955-43b4-ad03-2cbb03cf8723.jpg?alt=media&token=5476fd86-7316-4475-93bd-229eb3b36d30', '_blank')
 }
 
 const handleLogin = async () => {
   await liffStore.login()
-  setTimeout(async () => {
+  setTimeout(async () => {ห
     if (liffStore.profile?.userId) {
       await authStore.signInWithLineUserId(
         liffStore.profile.userId,
