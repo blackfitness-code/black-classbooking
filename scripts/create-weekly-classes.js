@@ -44,26 +44,26 @@ const formatDateThai = (dateStr) => {
 }
 
 /**
- * ดึงคลาสจากสัปดาห์ก่อนหน้า (7-13 วันที่แล้ว) แล้วจัดกลุ่มตาม dayOfWeek
+ * ดึงคลาสจากสัปดาห์ปัจจุบัน (จันทร์-อาทิตย์ของสัปดาห์นี้) แล้วจัดกลุ่มตาม dayOfWeek
  */
 const buildTemplateByDayOfWeek = async () => {
-  console.log('🔍 กำลังดึงประวัติคลาสจากสัปดาห์ก่อน...')
+  console.log('🔍 กำลังดึงประวัติคลาสจากสัปดาห์ปัจจุบัน...')
 
-  // หาช่วงวันของสัปดาห์ก่อน
+  // หาช่วงวันของสัปดาห์ปัจจุบัน
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
   const dow = today.getDay()
-  const daysToLastMonday = dow === 1 ? 7 : (dow === 0 ? 6 : dow - 1) + 7
+  const daysToThisMonday = dow === 1 ? 0 : (dow === 0 ? 6 : dow - 1)
   
-  const lastMonday = new Date(today)
-  lastMonday.setDate(today.getDate() - daysToLastMonday)
+  const thisMonday = new Date(today)
+  thisMonday.setDate(today.getDate() - daysToThisMonday)
   
-  const lastSunday = new Date(lastMonday)
-  lastSunday.setDate(lastMonday.getDate() + 6)
+  const thisSunday = new Date(thisMonday)
+  thisSunday.setDate(thisMonday.getDate() + 6)
 
-  const fromStr = toLocalDateStr(lastMonday)
-  const toStr = toLocalDateStr(lastSunday)
+  const fromStr = toLocalDateStr(thisMonday)
+  const toStr = toLocalDateStr(thisSunday)
 
   console.log(`   ดึงข้อมูลช่วง: ${fromStr} ถึง ${toStr}`)
 
@@ -77,7 +77,7 @@ const buildTemplateByDayOfWeek = async () => {
   console.log(`   พบคลาส ${allClasses.length} รายการ`)
 
   if (allClasses.length === 0) {
-    console.log('   ⚠️  ไม่พบคลาสในสัปดาห์ก่อน')
+    console.log('   ⚠️  ไม่พบคลาสในสัปดาห์ปัจจุบัน')
     return {}
   }
 
