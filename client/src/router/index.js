@@ -36,6 +36,11 @@ const routes = [
         name: 'Admin',
         component: () => import('../views/Admin.vue'),
         meta: { requiresAuth: true, requiresAdmin: true, requiresProfile: true }
+    },
+    {
+        path: '/card/:id',
+        name: 'MemberCardView',
+        component: () => import('../views/MemberCardView.vue')
     }
 ]
 

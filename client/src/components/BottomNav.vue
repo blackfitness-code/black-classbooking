@@ -80,8 +80,8 @@ import { useAuthStore } from '../stores/auth'
 const route = useRoute()
 const authStore = useAuthStore()
 
-// Hide navigation on profile setup page
+// Hide navigation on standalone pages (profile setup, shared member card)
 const isProfileSetupPage = computed(() => {
-  return route.name === 'ProfileSetup' || route.path === '/profile-setup'
+  return route.name === 'ProfileSetup' || route.path === '/profile-setup' || route.name === 'MemberCardView'
 })
 </script>
