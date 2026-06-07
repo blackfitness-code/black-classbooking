@@ -1046,7 +1046,7 @@ import {
 } from 'firebase/firestore'
 import { format } from 'date-fns'
 import { th } from 'date-fns/locale'
-import Swal from 'sweetalert2'
+import Swal from '../utils/dialog'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import CheckinScanner from '../components/CheckinScanner.vue'
 import { CLASS_TYPES, CLASS_SUBTYPES, getClassTypeInfo, getClassTypeColor, getClassSubtypes, getClassSubtypeInfo } from '../constants/classTypes'
@@ -1167,10 +1167,13 @@ const handleCheckinScan = async (raw) => {
   if (checkinBusy) return
   checkinBusy = true
   try {
-    let uid = ''
+    let uid = '', qrClassId = '', qrBookingId = '', qrDate = ''
     try {
       const parsed = JSON.parse(raw)
       uid = parsed.uid || ''
+      qrClassId = parsed.cid || ''
+      qrBookingId = parsed.bid || ''
+      qrDate = parsed.d || ''
       if (parsed.t && parsed.t !== 'checkin') throw new Error('wrong type')
     } catch { uid = (raw || '').trim() }
 
@@ -1184,7 +1187,29 @@ const handleCheckinScan = async (raw) => {
     if (!user) { showResult({ ok: false, title: 'ไม่พบสมาชิก', detail: `รหัส: ${uid}` }); return }
 
     const valid = uid === MOCK_UID ? true : isMembershipValid(user)
-    const cls = selectedCheckinClass.value
+
+    // Per-class QR: lock check-in to that class and verify the booking is real
+    let cls = selectedCheckinClass.value
+    if (qrClassId) {
+      const qrClass = classes.value.find(c => c.id === qrClassId)
+      cls = qrClass || cls
+      // sync the picker so staff sees which class is being checked in
+      if (qrDate) checkinDate.value = qrDate
+      selectedCheckinClassId.value = qrClassId
+
+      const booking = classBookings.value.find(b =>
+        (qrBookingId ? b.id === qrBookingId : (b.userId === uid && b.classId === qrClassId)) &&
+        b.status === 'confirmed'
+      )
+      if (!booking) {
+        showResult({ ok: false, title: 'ไม่พบการจอง',
+          name: user.nickname || user.displayName,
+          detail: `${qrClass?.name ? qrClass.name + ' · ' : ''}สมาชิกยังไม่ได้จองคลาสนี้`,
+          pictureUrl: user.pictureUrl })
+        return
+      }
+    }
+
     const className = cls ? cls.name : ''
 
     const already = todayCheckins.value.find(c => c.uid === uid && c.classId === (cls?.id || ''))

@@ -314,7 +314,7 @@ import { ref, reactive, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLiffStore } from '../stores/liff'
 import { useAuthStore } from '../stores/auth'
-import Swal from 'sweetalert2'
+import Swal from '../utils/dialog'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 
 const router = useRouter()

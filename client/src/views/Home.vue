@@ -98,6 +98,12 @@
         </div>
       </div>
 
+      <!-- Upcoming Classes (with per-class check-in QR) -->
+      <UpcomingClasses
+        v-if="showMainMenu"
+        :user-id="authStore.userProfile?.lineUserId || liffStore.profile?.userId"
+      />
+
       <!-- Quick Actions -->
       <div v-if="showMainMenu" class="mt-8">
         <h3 class="section-title">เมนูหลัก</h3>
@@ -217,6 +223,7 @@ import { useLiffStore } from '../stores/liff'
 import { useAuthStore } from '../stores/auth'
 
 import MemberCard from '../components/MemberCard.vue'
+import UpcomingClasses from '../components/UpcomingClasses.vue'
 
 const router = useRouter()
 const liffStore = useLiffStore()
@@ -270,7 +277,7 @@ const openScheduleImage = () => {
 
 const handleLogin = async () => {
   await liffStore.login()
-  setTimeout(async () => {ห
+  setTimeout(async () => {
     if (liffStore.profile?.userId) {
       await authStore.signInWithLineUserId(
         liffStore.profile.userId,
