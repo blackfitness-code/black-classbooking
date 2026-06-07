@@ -648,7 +648,7 @@
             <span>{{ formatThaiDate(checkinDate) }}</span>
             <span v-if="selectedCheckinClass">⏰ {{ selectedCheckinClass.time }}</span>
             <span v-if="selectedCheckinClass?.instructor">👤 {{ selectedCheckinClass.instructor }}</span>
-            <span class="ml-auto font-semibold text-primary">เข้าแล้ว {{ todayCheckins.length }} คน</span>
+            <span class="ml-auto font-semibold text-primary">เข้าแล้ว {{ sortedCheckins.length }} คน</span>
           </div>
           <div v-if="showClassPicker" class="px-4 py-3 border-t border-gray-100 space-y-2 bg-gray-50">
             <input v-model="checkinDate" type="date"
@@ -670,7 +670,7 @@
         <!-- Attendance list -->
         <div class="space-y-2">
           <div class="flex items-center justify-between gap-2">
-            <h3 class="font-bold text-gray-900 shrink-0">รายชื่อเช็คอิน · {{ todayCheckins.length }} คน</h3>
+            <h3 class="font-bold text-gray-900 shrink-0">รายชื่อเช็คอิน · {{ sortedCheckins.length }} คน</h3>
             <div class="flex items-center gap-2">
               <select v-model="checkinSort"
                 class="text-xs px-2 py-1.5 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary">
@@ -684,9 +684,9 @@
               </button>
             </div>
           </div>
-          <p v-if="!loadingCheckins && todayCheckins.length === 0"
+          <p v-if="!loadingCheckins && sortedCheckins.length === 0"
             class="text-center text-sm text-gray-400 py-8 bg-white rounded-xl border border-dashed border-gray-200">
-            ยังไม่มีใครเช็คอิน
+            {{ selectedCheckinClass ? 'ยังไม่มีใครเช็คอินคลาสนี้' : 'ยังไม่มีใครเช็คอิน' }}
           </p>
           <div v-for="c in sortedCheckins" :key="c.id"
             class="flex items-center gap-3 bg-white rounded-xl p-3 border border-gray-100">
@@ -710,6 +710,52 @@
             </button>
           </div>
         </div>
+
+        <!-- No-show list (booked but not checked in) -->
+        <div v-if="selectedCheckinClass" class="space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="font-bold text-gray-900 shrink-0">ยังไม่มา · {{ noShows.length }} คน</h3>
+            <button v-if="noShows.length" @click="exportNoShowsToCSV"
+              class="text-xs text-primary font-semibold flex items-center gap-1 shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              CSV
+            </button>
+          </div>
+
+          <!-- summary -->
+          <div class="flex items-center gap-2 text-xs">
+            <span class="px-2 py-1 rounded-lg bg-gray-50 text-gray-500 font-medium">จอง {{ classBookedCount }}</span>
+            <span class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 font-semibold">มา {{ classAttendedCount }}</span>
+            <span class="px-2 py-1 rounded-lg bg-red-50 text-red-500 font-semibold">ไม่มา {{ noShows.length }}</span>
+          </div>
+
+          <p v-if="noShows.length === 0"
+            class="text-center text-sm text-gray-400 py-8 bg-white rounded-xl border border-dashed border-gray-200">
+            {{ classBookedCount === 0 ? 'ยังไม่มีคนจองคลาสนี้' : 'มาครบทุกคนแล้ว 🎉' }}
+          </p>
+          <div v-for="m in noShows" :key="m.id"
+            class="flex items-center gap-3 bg-white rounded-xl p-3 border border-gray-100">
+            <img v-if="m.pictureUrl" :src="m.pictureUrl" class="w-10 h-10 rounded-full object-cover shrink-0 grayscale opacity-70">
+            <div v-else class="w-10 h-10 rounded-full bg-gray-100 shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-900 truncate text-sm">{{ m.name }}</p>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span :class="['text-[10px] font-bold px-1.5 py-0.5 rounded',
+                  (m.memberType || 'gold') === 'platinum' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700']">
+                  {{ (m.memberType || 'gold').toUpperCase() }}
+                </span>
+                <span v-if="m.fullName" class="text-xs text-gray-400 truncate">{{ m.fullName }}</span>
+              </div>
+            </div>
+            <button @click="manualCheckin(m)"
+              class="text-xs font-semibold text-primary border border-primary/30 rounded-lg px-2.5 py-1.5 hover:bg-primary/5 transition-colors shrink-0">
+              เช็คอิน
+            </button>
+          </div>
+        </div>
+        <p v-else class="text-center text-xs text-gray-400 py-6 bg-white rounded-xl border border-dashed border-gray-200">
+          เลือกคลาสด้านบนเพื่อดูรายชื่อคนที่ยังไม่มา
+        </p>
       </template>
 
     </main>
@@ -1110,7 +1156,9 @@ const selectedCheckinClass = computed(() =>
   classes.value.find(c => c.id === selectedCheckinClassId.value) || null
 )
 const sortedCheckins = computed(() => {
-  const rows = [...todayCheckins.value]
+  // แสดงเฉพาะคลาสที่เลือก (โหมด "เข้าร้าน" / ไม่เลือกคลาส = แสดงทั้งหมด)
+  const cls = selectedCheckinClass.value
+  const rows = todayCheckins.value.filter(c => !cls || c.classId === cls.id)
   switch (checkinSort.value) {
     case 'time-asc': return rows.sort((a, b) => (a.time || '').localeCompare(b.time || ''))
     case 'name': return rows.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th'))
@@ -1119,6 +1167,65 @@ const sortedCheckins = computed(() => {
     default: return rows.sort((a, b) => (b.time || '').localeCompare(a.time || ''))
   }
 })
+
+// ─── No-show: จองแล้ว (confirmed) แต่ยังไม่ได้เช็คอินในคลาสที่เลือก ──
+const classAttendedCount = computed(() => {
+  const cls = selectedCheckinClass.value
+  if (!cls) return 0
+  return todayCheckins.value.filter(c => c.classId === cls.id).length
+})
+const classBookedCount = computed(() =>
+  selectedCheckinClass.value ? getClassBookings(selectedCheckinClass.value.id).length : 0
+)
+const noShows = computed(() => {
+  const cls = selectedCheckinClass.value
+  if (!cls) return []
+  const attended = new Set(
+    todayCheckins.value.filter(c => c.classId === cls.id).map(c => c.uid)
+  )
+  return getClassBookings(cls.id)
+    .filter(b => !attended.has(b.userId))
+    .map(b => {
+      const u = getUserProfile(b.userId)
+      return {
+        id: b.id,
+        uid: b.userId,
+        name: u?.nickname || u?.displayName || 'ไม่มีชื่อ',
+        fullName: u ? [u.firstName, u.lastName].filter(Boolean).join(' ') : '',
+        pictureUrl: u?.pictureUrl || '',
+        memberType: u?.memberType || 'gold'
+      }
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+})
+
+// เช็คอินให้สมาชิกเองจากรายชื่อ no-show (ใช้ flow เดิมเพื่อ validate + บันทึก)
+const manualCheckin = (m) => {
+  const cls = selectedCheckinClass.value
+  if (!cls) return
+  handleCheckinScan(JSON.stringify({ t: 'checkin', uid: m.uid, cid: cls.id, bid: m.id, d: cls.date }))
+}
+
+const exportNoShowsToCSV = () => {
+  if (noShows.value.length === 0) {
+    Swal.fire({ title: 'ไม่มีข้อมูล', icon: 'warning', confirmButtonText: 'ตกลง' })
+    return
+  }
+  const cls = selectedCheckinClass.value
+  const headers = ['ชื่อเล่น', 'ชื่อจริง', 'ประเภทสมาชิก', 'คลาส', 'วันที่']
+  const rows = noShows.value.map(m => [
+    m.name, m.fullName, (m.memberType || 'gold').toUpperCase(),
+    cls?.name || '', formatDate(checkinDate.value)
+  ])
+  const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `no-show-${checkinDate.value || new Date().toISOString().split('T')[0]}.csv`
+  a.style.display = 'none'
+  document.body.appendChild(a); a.click(); document.body.removeChild(a)
+  Swal.fire({ title: 'Export สำเร็จ!', icon: 'success', timer: 1500, showConfirmButton: false })
+}
 
 const loadCheckins = async () => {
   if (!checkinDate.value) { todayCheckins.value = []; return }
