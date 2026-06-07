@@ -38,6 +38,11 @@ const routes = [
         meta: { requiresAuth: true, requiresAdmin: true, requiresProfile: true }
     },
     {
+        path: '/card',
+        name: 'MyCard',
+        component: () => import('../views/MemberCardView.vue')
+    },
+    {
         path: '/card/:id',
         name: 'MemberCardView',
         component: () => import('../views/MemberCardView.vue')

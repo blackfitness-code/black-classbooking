@@ -27,6 +27,7 @@
       <MemberCard
         v-else
         :display-name="member.displayName"
+        :full-name="member.fullName"
         :profile-picture-url="member.pictureUrl"
         :membership-expiry="member.membershipExpiry"
         :member-type="member.memberType || 'gold'"
@@ -37,26 +38,28 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase'
+import { useLiffStore } from '../stores/liff'
+import { useAuthStore } from '../stores/auth'
 import MemberCard from '../components/MemberCard.vue'
 
 const route = useRoute()
+const router = useRouter()
+const liffStore = useLiffStore()
+const authStore = useAuthStore()
 
 const loading = ref(true)
 const error = ref(false)
 const member = ref(null)
 
-onMounted(async () => {
-  const id = route.params.id
-  if (!id) {
-    error.value = true
-    loading.value = false
-    return
-  }
+// /card/:id → public card by id   |   /card → the logged-in user's own card
+const ownMode = computed(() => !route.params.id)
 
+// ─── Public card by id ────────────────────────────────────────
+async function loadById(id) {
   try {
     const snap = await getDoc(doc(db, 'users', id))
     if (!snap.exists()) {
@@ -69,6 +72,7 @@ onMounted(async () => {
       member.value = {
         lineUserId: snap.id,
         displayName: data.nickname || data.displayName || 'สมาชิก',
+        fullName: [data.firstName, data.lastName].filter(Boolean).join(' '),
         pictureUrl: data.pictureUrl || '',
         membershipExpiry: expiry,
         memberType: data.memberType || 'gold'
@@ -79,5 +83,54 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+// ─── Own card: verify the user exists in the system first ─────
+async function resolveOwnCard() {
+  // Use the real Firestore-backed check when we have a LINE profile,
+  // otherwise fall back to anything cached in storage.
+  if (liffStore.profile?.userId) {
+    if (!authStore.isAuthenticated || authStore.needsProfileSetup) {
+      await authStore.signInWithLineUserId(
+        liffStore.profile.userId,
+        liffStore.profile.displayName,
+        liffStore.profile.pictureUrl
+      )
+    }
+  } else {
+    await authStore.loadUserFromStorage()
+  }
+
+  const profile = authStore.userProfile
+  // No data in the system yet → send them to the home page.
+  if (!authStore.isAuthenticated || authStore.needsProfileSetup || !profile) {
+    router.replace('/')
+    return
+  }
+
+  member.value = {
+    lineUserId: profile.lineUserId || profile.id,
+    displayName: profile.nickname || profile.displayName || 'สมาชิก',
+    fullName: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
+    pictureUrl: profile.pictureUrl || liffStore.profile?.pictureUrl || '',
+    membershipExpiry: profile.membershipExpiry,
+    memberType: profile.memberType || 'gold'
+  }
+  loading.value = false
+}
+
+onMounted(() => {
+  if (!ownMode.value) {
+    loadById(route.params.id)
+  }
 })
+
+// Own mode: wait until LIFF has finished initializing, then resolve.
+watch(
+  () => liffStore.isLiffReady,
+  (ready) => {
+    if (ownMode.value && ready) resolveOwnCard()
+  },
+  { immediate: true }
+)
 </script>

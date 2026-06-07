@@ -32,6 +32,7 @@
       <div v-else-if="liffStore.isLoggedIn">
         <MemberCard
           :display-name="authStore.userProfile?.nickname || liffStore.profile?.displayName"
+          :full-name="memberFullName"
           :profile-picture-url="profilePictureUrl"
           :membership-expiry="authStore.userProfile?.membershipExpiry"
           :member-type="authStore.userProfile?.memberType || 'gold'"
@@ -251,6 +252,11 @@ const showProfileSetup = computed(() =>
 
 const showMainMenu = computed(() =>
   authStore.isAuthenticated && !authStore.needsProfileSetup
+)
+
+const memberFullName = computed(() =>
+  [authStore.userProfile?.firstName, authStore.userProfile?.lastName]
+    .filter(Boolean).join(' ')
 )
 
 const profilePictureUrl = computed(() => {
