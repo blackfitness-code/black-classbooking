@@ -233,7 +233,7 @@ import { db } from '../firebase'
 import { collection, query, where, getDocs, doc, increment, runTransaction } from 'firebase/firestore'
 import { format, addDays } from 'date-fns'
 import { th } from 'date-fns/locale'
-import Swal from 'sweetalert2'
+import Swal from '../utils/dialog'
 import { getClassTypeInfo, getClassTypeColor } from '../constants/classTypes'
 
 const authStore = useAuthStore()

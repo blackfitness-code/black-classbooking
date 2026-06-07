@@ -53,7 +53,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import Swal from 'sweetalert2'
+import Swal from '../utils/dialog'
 
 const isDev = import.meta.env.DEV
 const authStore = useAuthStore()

@@ -98,6 +98,12 @@
         </div>
       </div>
 
+      <!-- Upcoming Classes (with per-class check-in QR) -->
+      <UpcomingClasses
+        v-if="showMainMenu"
+        :user-id="authStore.userProfile?.lineUserId || liffStore.profile?.userId"
+      />
+
       <!-- Quick Actions -->
       <div v-if="showMainMenu" class="mt-8">
         <h3 class="section-title">เมนูหลัก</h3>
@@ -172,34 +178,37 @@
 
     <!-- Update Notice Modal -->
     <transition name="modal">
-      <div v-if="showUpdateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);">
-        <div class="modal-content bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-xl">
-          <div class="flex flex-col items-center pt-8 pb-5 px-6 bg-primary">
-            <span class="text-6xl mb-3" style="filter: drop-shadow(0 8px 20px rgba(0,0,0,0.25));">📣</span>
-            <span class="text-xs font-medium tracking-widest uppercase text-white/60 mb-1">What's New</span>
-            <h2 class="text-xl font-bold text-white">มีอะไรใหม่?</h2>
-          </div>
-
-          <div class="px-6 py-5">
-            <div class="flex items-center gap-4 p-4 rounded-2xl mb-5 bg-water border border-primary/20">
-              <div class="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
-                </svg>
-              </div>
-              <div>
-                <p class="font-semibold text-dark text-sm">อัพเดตระบบจองคลาส ให้สามารถจองล่วงหน้าได้ 14 วัน</p>
-              </div>
+      <div v-if="showUpdateModal" class="fixed inset-0 z-50 flex items-center justify-center p-5" style="background: rgba(0,0,0,0.4); backdrop-filter: blur(6px);">
+        <div class="modal-content bg-white rounded-3xl w-full max-w-xs overflow-hidden shadow-2xl">
+          <div class="px-7 pt-8 pb-7">
+            <!-- Icon -->
+            <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+              <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2m0 14v2m9-9h-2M5 12H3m13.95-6.95-1.4 1.4M7.45 16.55l-1.4 1.4m12.5 0-1.4-1.4M7.45 7.45l-1.4-1.4"/>
+              </svg>
             </div>
 
-            <label class="flex items-center gap-2 cursor-pointer select-none mb-4">
-              <input v-model="dontShowAgain" type="checkbox" class="w-4 h-4 rounded accent-primary">
-              <span class="text-sm text-gray-400">ไม่แสดงอีก</span>
-            </label>
+            <!-- Header -->
+            <span class="text-[11px] font-medium tracking-[0.2em] uppercase text-primary">อัพเดตใหม่</span>
+            <h2 class="text-lg font-semibold text-dark mt-1.5 mb-4">มีอะไรใหม่?</h2>
 
-            <button @click="closeUpdateModal" class="btn-primary w-full py-3">
+            <!-- Content -->
+            <p class="text-sm leading-relaxed text-gray-500">
+              อัพเดตระบบจองคลาส ให้สามารถจองล่วงหน้าได้ 14 วัน
+            </p>
+
+            <!-- Divider -->
+            <div class="h-px bg-gray-100 my-6"></div>
+
+            <!-- Action -->
+            <button @click="closeUpdateModal" class="btn-primary w-full py-3 rounded-2xl">
               รับทราบ
             </button>
+
+            <label class="flex items-center justify-center gap-2 cursor-pointer select-none mt-4">
+              <input v-model="dontShowAgain" type="checkbox" class="w-3.5 h-3.5 rounded accent-primary">
+              <span class="text-xs text-gray-400">ไม่แสดงอีก</span>
+            </label>
           </div>
         </div>
       </div>
@@ -214,6 +223,7 @@ import { useLiffStore } from '../stores/liff'
 import { useAuthStore } from '../stores/auth'
 
 import MemberCard from '../components/MemberCard.vue'
+import UpcomingClasses from '../components/UpcomingClasses.vue'
 
 const router = useRouter()
 const liffStore = useLiffStore()
@@ -267,7 +277,7 @@ const openScheduleImage = () => {
 
 const handleLogin = async () => {
   await liffStore.login()
-  setTimeout(async () => {ห
+  setTimeout(async () => {
     if (liffStore.profile?.userId) {
       await authStore.signInWithLineUserId(
         liffStore.profile.userId,

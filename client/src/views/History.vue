@@ -169,7 +169,7 @@ import { db } from '../firebase'
 import { collection, query, where, getDocs, updateDoc, doc, increment } from 'firebase/firestore'
 import { format } from 'date-fns'
 import { th } from 'date-fns/locale'
-import Swal from 'sweetalert2'
+import Swal from '../utils/dialog'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 
 const authStore = useAuthStore()
