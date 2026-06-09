@@ -274,13 +274,23 @@
             <h2 class="text-lg font-bold text-gray-900">จัดการสมาชิก</h2>
             <p class="text-xs text-gray-400">{{ filteredUsers.length }} คน</p>
           </div>
-          <button @click="exportUsersToCSV" :disabled="filteredUsers.length === 0"
-            class="flex items-center gap-1.5 px-3 py-2 bg-emerald-500 text-white rounded-xl text-sm font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            CSV
-          </button>
+          <div class="flex items-center gap-2">
+            <input ref="importFileInput" type="file" accept=".csv,text/csv" class="hidden" @change="onImportFile">
+            <button @click="triggerImport" :disabled="importing"
+              class="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50">
+              <svg class="w-4 h-4" :class="importing && 'animate-pulse'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+              </svg>
+              {{ importing ? 'กำลังนำเข้า...' : 'Import' }}
+            </button>
+            <button @click="exportUsersToCSV" :disabled="filteredUsers.length === 0"
+              class="flex items-center gap-1.5 px-3 py-2 bg-emerald-500 text-white rounded-xl text-sm font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              CSV
+            </button>
+          </div>
         </div>
 
         <!-- Search -->
@@ -436,6 +446,20 @@
                     ยกเลิก
                   </button>
                 </div>
+              </div>
+
+              <!-- Edit / Delete -->
+              <div class="flex gap-2 pt-3 border-t border-gray-100">
+                <button @click="openEditUser(user)"
+                  class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-primary/10 text-primary rounded-xl text-sm font-semibold hover:bg-primary/20 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  แก้ไขข้อมูล
+                </button>
+                <button @click="deleteUser(user)"
+                  class="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  ลบ
+                </button>
               </div>
             </div>
           </div>
@@ -1111,6 +1135,79 @@
       </div>
     </div>
 
+    <!-- Edit User Modal -->
+    <div v-if="showEditUserModal && editingUser" class="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-sm max-h-[90dvh] overflow-y-auto">
+        <div class="p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-gray-900">แก้ไขข้อมูลสมาชิก</h3>
+            <button @click="showEditUserModal = false" class="p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-100">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <form @submit.prevent="saveEditUser" class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 mb-1">ชื่อเล่น</label>
+              <input v-model="editingUser.nickname" type="text"
+                class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">ชื่อจริง</label>
+                <input v-model="editingUser.firstName" type="text"
+                  class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">นามสกุล</label>
+                <input v-model="editingUser.lastName" type="text"
+                  class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 mb-1">เลขบัตรประชาชน</label>
+              <input v-model="editingUser.nationalId" type="text" inputmode="numeric" maxlength="13"
+                class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">เบอร์โทร</label>
+                <input v-model="editingUser.phone" type="tel"
+                  class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">เพศ</label>
+                <select v-model="editingUser.gender"
+                  class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="">-</option>
+                  <option value="male">ชาย</option>
+                  <option value="female">หญิง</option>
+                  <option value="other">อื่นๆ</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 mb-1">วันเกิด</label>
+              <input v-model="editingUser.birthDate" type="date"
+                class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 mb-1">ปัญหาสุขภาพ</label>
+              <textarea v-model="editingUser.healthIssues" rows="2"
+                class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+            </div>
+            <div class="flex gap-3 pt-1">
+              <button type="button" @click="showEditUserModal = false"
+                class="flex-1 py-3 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">ยกเลิก</button>
+              <button type="submit" :disabled="savingUser"
+                class="flex-1 py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">
+                {{ savingUser ? 'กำลังบันทึก...' : 'บันทึก' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <LoadingOverlay :show="isLoading" title="กำลังโหลดข้อมูล" subtitle="กรุณารอสักครู่..."/>
   </div>
 </template>
@@ -1160,6 +1257,13 @@ const userSortBy = ref('createdAt')
 const membershipFilter = ref('all')
 const expandedUserId = ref(null)
 const toggleUser = (id) => { expandedUserId.value = expandedUserId.value === id ? null : id }
+
+// User edit / import
+const showEditUserModal = ref(false)
+const editingUser = ref(null)
+const savingUser = ref(false)
+const importing = ref(false)
+const importFileInput = ref(null)
 
 // Booking filters
 const bookingSearch = ref('')
@@ -2185,6 +2289,227 @@ const updateMemberType = async (user, newType) => {
     console.error('update member type failed:', e)
     Swal.fire({ title: 'เกิดข้อผิดพลาด!', text: 'ไม่สามารถเปลี่ยนแพ็คเกจได้', icon: 'error', confirmButtonText: 'ตกลง' })
     await loadAllData()
+  }
+}
+
+// ---- Edit / Delete member ----
+const toInputDate = (v) => {
+  if (!v) return ''
+  try { const d = v?.toDate ? v.toDate() : new Date(v); return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0] } catch { return '' }
+}
+
+const openEditUser = (user) => {
+  editingUser.value = {
+    id: user.id,
+    nickname: user.nickname || '',
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    nationalId: user.nationalId || '',
+    phone: user.phone || '',
+    gender: user.gender || '',
+    birthDate: toInputDate(user.birthDate),
+    healthIssues: user.healthIssues || ''
+  }
+  showEditUserModal.value = true
+}
+
+const saveEditUser = async () => {
+  if (!editingUser.value) return
+  savingUser.value = true
+  try {
+    const u = editingUser.value
+    await updateDoc(doc(db, 'users', u.id), {
+      nickname: (u.nickname || '').trim(),
+      firstName: (u.firstName || '').trim(),
+      lastName: (u.lastName || '').trim(),
+      nationalId: (u.nationalId || '').trim(),
+      phone: (u.phone || '').trim(),
+      gender: u.gender || '',
+      birthDate: u.birthDate || '',
+      healthIssues: (u.healthIssues || '').trim(),
+      updatedAt: new Date()
+    })
+    showEditUserModal.value = false
+    await loadAllData(true)
+    Swal.fire({ title: 'สำเร็จ!', text: 'บันทึกข้อมูลสมาชิกแล้ว', icon: 'success', confirmButtonText: 'ตกลง' })
+  } catch (e) {
+    console.error('save user failed:', e)
+    Swal.fire({ title: 'เกิดข้อผิดพลาด!', text: 'ไม่สามารถบันทึกข้อมูลได้', icon: 'error', confirmButtonText: 'ตกลง' })
+  } finally {
+    savingUser.value = false
+  }
+}
+
+const deleteUser = async (user) => {
+  const res = await Swal.fire({
+    title: 'ลบสมาชิก?',
+    html: `ต้องการลบ <strong>${user.nickname || user.displayName || 'สมาชิก'}</strong> ออกจากระบบ?<br><span class="text-xs text-gray-400">การลบไม่สามารถย้อนกลับได้</span>`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'ลบ',
+    cancelButtonText: 'ยกเลิก'
+  })
+  if (!res.isConfirmed) return
+  try {
+    await deleteDoc(doc(db, 'users', user.id))
+    if (expandedUserId.value === user.id) expandedUserId.value = null
+    await loadAllData(true)
+    Swal.fire({ title: 'ลบแล้ว', icon: 'success', timer: 1200, showConfirmButton: false })
+  } catch (e) {
+    console.error('delete user failed:', e)
+    Swal.fire({ title: 'เกิดข้อผิดพลาด!', text: 'ไม่สามารถลบสมาชิกได้', icon: 'error', confirmButtonText: 'ตกลง' })
+  }
+}
+
+// ---- Import members from CSV (รองรับ header แบบไฟล์ export) ----
+function parseCSV(text) {
+  const rows = []
+  let row = [], field = '', inQuotes = false
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++ }
+        else inQuotes = false
+      } else field += c
+    } else {
+      if (c === '"') inQuotes = true
+      else if (c === ',') { row.push(field); field = '' }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = '' }
+      else field += c
+    }
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row) }
+  return rows.filter(r => r.some(c => (c || '').trim() !== ''))
+}
+
+const triggerImport = () => importFileInput.value?.click()
+
+const onImportFile = async (e) => {
+  const file = e.target.files?.[0]
+  e.target.value = '' // ให้เลือกไฟล์เดิมซ้ำได้
+  if (!file) return
+  try {
+    const raw = await file.text()
+    const text = raw.replace(/^﻿/, '') // ตัด BOM
+    const rows = parseCSV(text)
+    if (rows.length < 2) {
+      Swal.fire({ title: 'ไฟล์ว่าง', text: 'ไม่พบข้อมูลในไฟล์ CSV', icon: 'warning', confirmButtonText: 'ตกลง' })
+      return
+    }
+    const header = rows[0].map(h => (h || '').trim())
+    const idx = (name) => header.indexOf(name)
+    const col = {
+      uid: idx('LINE User ID'), nickname: idx('ชื่อเล่น'),
+      firstName: idx('ชื่อจริง'), lastName: idx('นามสกุล'),
+      phone: idx('เบอร์โทร'), birthDate: idx('วันเกิด'), gender: idx('เพศ'),
+      memberType: idx('ประเภทสมาชิก'), expiry: idx('วันหมดอายุ'), role: idx('Role')
+    }
+    if (col.uid === -1) {
+      Swal.fire({ title: 'รูปแบบไม่ถูกต้อง', text: 'ไฟล์ต้องมีคอลัมน์ "LINE User ID" (ใช้ไฟล์จากปุ่ม Export CSV ได้)', icon: 'error', confirmButtonText: 'ตกลง' })
+      return
+    }
+
+    const dataRows = rows.slice(1)
+    const confirm = await Swal.fire({
+      title: 'ยืนยันการนำเข้า',
+      html: `พบ <strong>${dataRows.length}</strong> รายการ<br><span class="text-xs text-gray-400">รายการที่มีอยู่จะถูกอัปเดต · ที่ไม่มีจะถูกสร้างใหม่</span>`,
+      icon: 'question', showCancelButton: true,
+      confirmButtonText: 'นำเข้า', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#00B900'
+    })
+    if (!confirm.isConfirmed) return
+
+    importing.value = true
+    let created = 0, updated = 0, unchanged = 0, failed = 0
+    const createdList = [], updatedList = []
+    const parsePkg = (v) => {
+      const s = (v || '').trim().toLowerCase()
+      return s === 'platinum' ? 'platinum' : s === 'gold' ? 'gold' : ''
+    }
+    const parseDateTs = (v) => {
+      const s = (v || '').trim()
+      if (!s) return null
+      const d = new Date(s)
+      return isNaN(d.getTime()) ? null : Timestamp.fromDate(d)
+    }
+    const existingMap = new Map(users.value.map(u => [u.id, u]))
+    // เทียบว่าค่าจากไฟล์ต่างจากของเดิมไหม (เพื่อเขียนเฉพาะที่เปลี่ยนจริง)
+    const isSame = (key, val, user) => {
+      if (key === 'membershipExpiry') {
+        const ex = user.membershipExpiry
+        const exMs = ex?.toDate ? ex.toDate().getTime() : (ex ? new Date(ex).getTime() : null)
+        const nvMs = val?.toDate ? val.toDate().getTime() : null
+        return exMs === nvMs
+      }
+      if (key === 'role') return (user.role || 'user') === val
+      if (key === 'memberType') return (user.memberType || '') === (val || '')
+      return (user[key] || '') === (val || '')
+    }
+
+    for (const r of dataRows) {
+      const uid = (r[col.uid] || '').trim()
+      if (!uid) { failed++; continue }
+      const fields = {}
+      const setIf = (i, key, transform) => {
+        if (i > -1) { const v = (r[i] || '').trim(); fields[key] = transform ? transform(v) : v }
+      }
+      setIf(col.nickname, 'nickname')
+      setIf(col.firstName, 'firstName')
+      setIf(col.lastName, 'lastName')
+      setIf(col.phone, 'phone')
+      setIf(col.birthDate, 'birthDate')
+      setIf(col.gender, 'gender')
+      if (col.memberType > -1) fields.memberType = parsePkg(r[col.memberType])
+      if (col.role > -1) fields.role = (r[col.role] || '').trim().toLowerCase() === 'admin' ? 'admin' : 'user'
+      if (col.expiry > -1) { const ts = parseDateTs(r[col.expiry]); if (ts) fields.membershipExpiry = ts }
+
+      const label = fields.nickname || [fields.firstName, fields.lastName].filter(Boolean).join(' ') || uid
+      const existing = existingMap.get(uid)
+      try {
+        if (!existing) {
+          // เพิ่มใหม่
+          await setDoc(doc(db, 'users', uid),
+            { ...fields, lineUserId: uid, createdAt: new Date(), updatedAt: new Date(), profileCompleted: true },
+            { merge: true })
+          created++; createdList.push(label)
+          existingMap.set(uid, { id: uid, ...fields })
+        } else {
+          // เขียนเฉพาะฟิลด์ที่เปลี่ยนจริง
+          const changes = {}
+          for (const [key, val] of Object.entries(fields)) {
+            if (!isSame(key, val, existing)) changes[key] = val
+          }
+          if (Object.keys(changes).length === 0) { unchanged++; continue }
+          await setDoc(doc(db, 'users', uid), { ...changes, updatedAt: new Date() }, { merge: true })
+          updated++; updatedList.push(label)
+        }
+      } catch (err) { console.error('import row failed', uid, err); failed++ }
+    }
+    await loadAllData(true)
+    const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+    const listHtml = (title, arr, color) => arr.length
+      ? `<div class="mt-2">
+           <p class="font-semibold ${color}">${title} (${arr.length})</p>
+           <ul class="list-disc list-inside max-h-36 overflow-y-auto">${arr.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+         </div>`
+      : ''
+    Swal.fire({
+      title: 'นำเข้าเสร็จสิ้น',
+      html: `<div class="text-left text-sm">
+        <p>เพิ่มใหม่ <strong>${created}</strong> · อัปเดต <strong>${updated}</strong> · ไม่เปลี่ยน <strong>${unchanged}</strong>${failed ? ` · <span class="text-red-500">ล้มเหลว ${failed}</span>` : ''}</p>
+        ${listHtml('เพิ่มใหม่', createdList, 'text-emerald-600')}
+        ${listHtml('อัปเดต', updatedList, 'text-blue-600')}
+      </div>`,
+      icon: 'success', confirmButtonText: 'ตกลง'
+    })
+  } catch (e) {
+    console.error('import failed:', e)
+    Swal.fire({ title: 'เกิดข้อผิดพลาด!', text: 'อ่านไฟล์ไม่สำเร็จ', icon: 'error', confirmButtonText: 'ตกลง' })
+  } finally {
+    importing.value = false
   }
 }
 
