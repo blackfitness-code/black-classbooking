@@ -283,85 +283,119 @@
           </button>
         </div>
 
-        <div class="space-y-2.5">
-          <div class="relative">
-            <input v-model="userSearch" type="text" placeholder="ค้นหาสมาชิก..."
-              class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white">
-            <svg class="absolute left-3.5 top-3 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
+        <!-- Search -->
+        <div class="relative">
+          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input v-model="userSearch" type="text" placeholder="ค้นหาชื่อ, ชื่อจริง, เบอร์..."
+            class="w-full pl-10 pr-9 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white">
+          <button v-if="userSearch" @click="userSearch = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Filter chips + sort -->
+        <div class="flex items-center gap-2">
+          <div class="flex gap-1.5 overflow-x-auto scrollbar-hide flex-1 -mx-1 px-1">
+            <button v-for="f in [{value:'all',label:'ทั้งหมด'},{value:'active',label:'ใช้งานได้'},{value:'expired',label:'หมดอายุ'},{value:'none',label:'ไม่มีแพ็คเกจ'}]"
+              :key="f.value" @click="membershipFilter = f.value"
+              :class="['px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 border transition',
+                membershipFilter === f.value ? 'bg-primary text-white border-primary' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50']">
+              {{ f.label }}
+            </button>
           </div>
-          <div class="flex gap-2">
-            <select v-model="userSortBy" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary">
-              <option value="createdAt">เรียงตามวันที่สมัคร</option>
-              <option value="name">เรียงตามชื่อ</option>
-              <option value="membership">เรียงตามสมาชิก</option>
-              <option value="role">เรียงตาม Role</option>
-            </select>
-            <select v-model="membershipFilter" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary">
-              <option value="all">ทั้งหมด</option>
-              <option value="active">ใช้งานได้</option>
-              <option value="expired">หมดอายุ</option>
-              <option value="none">ไม่มีสมาชิก</option>
-            </select>
+          <select v-model="userSortBy" class="shrink-0 px-2.5 py-1.5 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary">
+            <option value="createdAt">ใหม่สุด</option>
+            <option value="name">ชื่อ</option>
+            <option value="membership">สมาชิก</option>
+            <option value="role">Role</option>
+          </select>
+        </div>
+
+        <!-- Loading skeleton -->
+        <div v-if="isLoading" class="space-y-2.5">
+          <div v-for="n in 5" :key="n" class="bg-white rounded-2xl border border-gray-100 p-3.5 flex items-center gap-3 animate-pulse">
+            <div class="w-11 h-11 rounded-full bg-gray-100 shrink-0"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+              <div class="h-2.5 bg-gray-100 rounded w-1/3"></div>
+            </div>
           </div>
         </div>
 
-        <div v-if="!isLoading" class="space-y-3">
+        <!-- Empty -->
+        <div v-else-if="filteredUsers.length === 0" class="text-center py-14 bg-white rounded-2xl border border-dashed border-gray-200">
+          <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <p class="text-sm font-medium text-gray-500">ไม่พบสมาชิก</p>
+          <p class="text-xs text-gray-400 mt-0.5">ลองเปลี่ยนคำค้นหรือตัวกรอง</p>
+        </div>
+
+        <!-- List (collapsible cards) -->
+        <div v-else class="space-y-2.5">
           <div v-for="user in filteredUsers" :key="user.id"
-            class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div class="p-4">
-              <div class="flex items-start gap-3">
-                <img :src="user.pictureUrl || '/default-avatar.png'"
-                  class="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-100">
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <h4 class="font-bold text-gray-900 truncate">{{ user.nickname || user.displayName || 'ไม่มีชื่อ' }}</h4>
-                    <span :class="['text-xs px-2 py-0.5 rounded-full font-medium',
-                      user.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-500']">
-                      {{ user.role === 'admin' ? 'Admin' : 'User' }}
-                    </span>
-                    <span :class="['text-xs px-2 py-0.5 rounded-full font-medium',
-                      isMembershipValid(user) ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-500']">
-                      {{ isMembershipValid(user) ? 'ใช้งานได้' : 'หมดอายุ' }}
-                    </span>
-                    <span v-if="user.memberType === 'gold' || user.memberType === 'platinum'"
-                      :class="['text-xs px-2 py-0.5 rounded-full font-bold',
-                      user.memberType === 'platinum' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700']">
-                      {{ user.memberType === 'platinum' ? 'Platinum' : 'Gold' }}
-                    </span>
-                    <span v-else class="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-400">
-                      ยังไม่มีแพ็คเกจ
-                    </span>
-                  </div>
-                  <p v-if="user.firstName || user.lastName" class="text-xs text-gray-500 mt-0.5">
-                    {{ user.firstName }} {{ user.lastName }}
-                  </p>
-                  <p class="text-xs text-gray-400 mt-0.5">สมาชิกถึง: {{ getMembershipExpiryDisplay(user) }}</p>
+            class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-shadow"
+            :class="expandedUserId === user.id ? 'ring-1 ring-primary/30 shadow-md' : ''">
+            <!-- Summary (tap to expand) -->
+            <button type="button" @click="toggleUser(user.id)" class="w-full flex items-center gap-3 p-3.5 text-left">
+              <div class="relative shrink-0">
+                <img :src="user.pictureUrl || '/default-avatar.png'" class="w-11 h-11 rounded-full object-cover border border-gray-100">
+                <span v-if="isUserInCooldown(user)" class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 border-2 border-white flex items-center justify-center">
+                  <span class="text-white text-[8px]">🚫</span>
+                </span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <h4 class="font-bold text-gray-900 truncate">{{ user.nickname || user.displayName || 'ไม่มีชื่อ' }}</h4>
+                  <span v-if="user.role === 'admin'" class="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-violet-100 text-violet-700 shrink-0">ADMIN</span>
+                </div>
+                <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                  <span :class="['text-[10px] px-1.5 py-0.5 rounded-full font-semibold',
+                    isMembershipValid(user) ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-500']">
+                    {{ isMembershipValid(user) ? 'ใช้งานได้' : 'หมดอายุ' }}
+                  </span>
+                  <span :class="['text-[10px] px-1.5 py-0.5 rounded-full font-bold', pkgChipClass(user.memberType)]">
+                    {{ user.memberType === 'platinum' ? 'PLATINUM' : user.memberType === 'gold' ? 'GOLD' : 'ไม่มีแพ็คเกจ' }}
+                  </span>
+                  <span class="text-[11px] text-gray-400 truncate">ถึง {{ getMembershipExpiryDisplay(user) }}</span>
                 </div>
               </div>
-            </div>
+              <svg :class="['w-5 h-5 text-gray-300 shrink-0 transition-transform', expandedUserId === user.id ? 'rotate-180' : '']"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
 
-            <div class="border-t border-gray-100 p-4 space-y-3">
-              <div>
-                <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">จัดการ Role</label>
-                <select :value="user.role || 'user'" @change="updateUserRole(user, $event.target.value)"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary">
-                  <option value="user">User (ผู้ใช้ทั่วไป)</option>
-                  <option value="admin">Admin (ผู้ดูแลระบบ)</option>
-                </select>
+            <!-- Expanded management panel -->
+            <div v-if="expandedUserId === user.id" class="border-t border-gray-100 p-4 space-y-4 bg-gray-50/60">
+              <p v-if="user.firstName || user.lastName" class="text-sm font-medium text-gray-700 -mb-1">
+                {{ user.firstName }} {{ user.lastName }}
+              </p>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Role</label>
+                  <select :value="user.role || 'user'" @change="updateUserRole(user, $event.target.value)"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">แพ็คเกจ</label>
+                  <select :value="user.memberType || ''" @change="updateMemberType(user, $event.target.value)"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="">ยังไม่มี</option>
+                    <option value="gold">Gold</option>
+                    <option value="platinum">Platinum</option>
+                  </select>
+                </div>
               </div>
+
               <div>
-                <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">ประเภทสมาชิก</label>
-                <select :value="user.memberType || ''" @change="updateMemberType(user, $event.target.value)"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary">
-                  <option value="">ยังไม่มีแพ็คเกจ</option>
-                  <option value="gold">Gold</option>
-                  <option value="platinum">Platinum</option>
-                </select>
-              </div>
-              <div>
-                <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">วันหมดอายุสมาชิก</label>
+                <label class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">วันหมดอายุสมาชิก</label>
                 <div class="flex gap-2">
                   <input :value="getMembershipExpiryForInput(user)" @change="updateMembershipExpiry(user, $event.target.value)"
                     type="date"
@@ -376,17 +410,13 @@
               <!-- Cooldown Section -->
               <div class="pt-1">
                 <div class="flex items-center justify-between mb-1.5">
-                  <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Cooldown (ระงับการจอง)</label>
-                  <div class="flex items-center gap-1.5">
-                    <span v-if="isUserInCooldown(user)"
-                      class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">
-                      🚫 เหลืออีก {{ getCooldownDaysLeft(user) }} วัน
-                    </span>
-                    <span v-else class="text-xs bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">ไม่มี</span>
-                  </div>
+                  <label class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Cooldown (ระงับการจอง)</label>
+                  <span v-if="isUserInCooldown(user)" class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">
+                    🚫 เหลืออีก {{ getCooldownDaysLeft(user) }} วัน
+                  </span>
+                  <span v-else class="text-xs bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">ไม่มี</span>
                 </div>
 
-                <!-- Active cooldown info -->
                 <div v-if="isUserInCooldown(user)"
                   class="bg-red-50 border border-red-100 rounded-xl p-3 mb-2 text-xs text-red-700 space-y-0.5">
                   <p>ถูกระงับถึง: <strong>{{ getCooldownEndDateDisplay(user) }}</strong></p>
@@ -1128,6 +1158,8 @@ const classDateFilter = ref('')
 const userSearch = ref('')
 const userSortBy = ref('createdAt')
 const membershipFilter = ref('all')
+const expandedUserId = ref(null)
+const toggleUser = (id) => { expandedUserId.value = expandedUserId.value === id ? null : id }
 
 // Booking filters
 const bookingSearch = ref('')
@@ -1300,14 +1332,27 @@ const handleCheckinScan = async (raw) => {
 
     const valid = isMembershipValid(user)
 
-    // Per-class QR: lock check-in to that class and verify the booking is real
+    // Per-class QR: ต้องตรงกับคลาสที่แอดมินเลือกเท่านั้น (ไม่ auto-switch)
     let cls = selectedCheckinClass.value
     if (qrClassId) {
       const qrClass = classes.value.find(c => c.id === qrClassId)
-      cls = qrClass || cls
-      // sync the picker so staff sees which class is being checked in
-      if (qrDate) checkinDate.value = qrDate
-      selectedCheckinClassId.value = qrClassId
+
+      // ต้องเลือกคลาสก่อน
+      if (!selectedCheckinClassId.value) {
+        showResult({ ok: false, title: 'กรุณาเลือกคลาสก่อน',
+          name: user.nickname || user.displayName,
+          detail: `QR เป็นของคลาส ${qrClass?.name || 'อื่น'} — เลือกคลาสให้ตรงแล้วสแกนใหม่`,
+          pictureUrl: user.pictureUrl })
+        return
+      }
+      // QR ต้องเป็นคลาสเดียวกับที่เลือก
+      if (qrClassId !== selectedCheckinClassId.value) {
+        showResult({ ok: false, title: 'ไม่ตรงกับคลาสที่เลือก',
+          name: user.nickname || user.displayName,
+          detail: `QR เป็นของ ${qrClass?.name || 'คลาสอื่น'}`,
+          pictureUrl: user.pictureUrl })
+        return
+      }
 
       const booking = classBookings.value.find(b =>
         (qrBookingId ? b.id === qrBookingId : (b.userId === uid && b.classId === qrClassId)) &&
@@ -2119,11 +2164,27 @@ const setMembershipExpiry = async (user) => {
 }
 
 const updateMemberType = async (user, newType) => {
+  if (newType === (user.memberType || '')) return
+  const label = (t) => t === 'platinum' ? 'Platinum' : t === 'gold' ? 'Gold' : 'ยังไม่มีแพ็คเกจ'
+  const result = await Swal.fire({
+    title: 'ยืนยันการเปลี่ยนแพ็คเกจ',
+    html: `เปลี่ยนแพ็คเกจของ <strong>${user.nickname || user.displayName || 'ผู้ใช้'}</strong> เป็น <strong>${label(newType)}</strong>?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'ยืนยัน',
+    cancelButtonText: 'ยกเลิก',
+  })
+  if (!result.isConfirmed) { await loadAllData(); return }
   try {
     await updateDoc(doc(db, 'users', user.id), { memberType: newType, updatedAt: new Date() })
-    user.memberType = newType
+    await loadAllData()
+    Swal.fire({ title: 'สำเร็จ!', text: `เปลี่ยนแพ็คเกจเป็น ${label(newType)} สำเร็จ!`, icon: 'success', confirmButtonText: 'ตกลง' })
   } catch (e) {
     console.error('update member type failed:', e)
+    Swal.fire({ title: 'เกิดข้อผิดพลาด!', text: 'ไม่สามารถเปลี่ยนแพ็คเกจได้', icon: 'error', confirmButtonText: 'ตกลง' })
+    await loadAllData()
   }
 }
 

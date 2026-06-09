@@ -358,10 +358,10 @@ const canBook = () => {
 const getBookingButtonText = () => {
   if (!yogaClass.value) return 'กำลังโหลด...'
   if (authStore.isCooldownActive()) return 'ถูกระงับการจองชั่วคราว'
-  if (!authStore.isMembershipValid()) {
-    return !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ'
+  // หมดอายุเท่านั้นที่โชว์ข้อความ — Gold / กำลังตรวจข้อมูล แค่ปิดปุ่ม (canBook คืน false)
+  if (!authStore.isMembershipValid() && authStore.userProfile?.membershipExpiry) {
+    return 'สมาชิกหมดอายุ'
   }
-  if (authStore.userProfile?.memberType === 'gold') return 'แพ็คเกจ Gold จองคลาสไม่ได้'
   if (yogaClass.value.currentBookings >= yogaClass.value.maxCapacity) return 'เต็มแล้ว'
   if (isAlreadyBooked.value) return 'จองแล้ว'
   
