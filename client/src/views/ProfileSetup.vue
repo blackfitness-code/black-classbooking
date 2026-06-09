@@ -1,308 +1,270 @@
 <template>
-  <div class="page-container">
-    <!-- Header -->
-    <header class="page-header">
-      <div class="max-w-md mx-auto px-6 py-4">
-        <h1 class="page-title text-center">ข้อมูลเบื้องต้น</h1>
-        <p class="text-sm text-gray-600 text-center mt-1">กรุณากรอกข้อมูลสำหรับการจองคลาส</p>
-      </div>
-    </header>
+  <div class="min-h-screen bg-gradient-to-b from-primary/5 via-gray-50 to-gray-50 pb-32">
+    <!-- Hero header -->
+    <header class="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/80 text-white rounded-b-[2rem] shadow-lg">
+      <div class="absolute -top-12 -right-10 w-44 h-44 bg-white/10 rounded-full blur-2xl"></div>
+      <div class="absolute -bottom-16 -left-8 w-40 h-40 bg-black/10 rounded-full blur-2xl"></div>
 
-    <main class="max-w-md mx-auto px-6 py-6">
-      <!-- Profile Card -->
-      <div class="card mb-6">
-        <div class="flex items-center space-x-4 mb-4">
+      <div class="relative max-w-md mx-auto px-6 pt-8 pb-10">
+        <h1 class="text-xl font-bold text-center">ตั้งค่าโปรไฟล์</h1>
+        <p class="text-sm text-white/80 text-center mt-1">กรอกข้อมูลเพื่อเริ่มจองคลาส</p>
+
+        <div class="flex flex-col items-center mt-6">
           <div class="relative">
             <img
               v-if="profilePictureUrl"
               :src="profilePictureUrl"
               :alt="liffStore.profile?.displayName"
-              class="w-16 h-16 rounded-full object-cover"
+              class="w-20 h-20 rounded-2xl object-cover ring-4 ring-white/30 shadow-lg"
               @error="onImageError"
             >
-            <div
-              v-else
-              class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center"
-            >
-              <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
+            <div v-else class="w-20 h-20 rounded-2xl bg-white/15 flex items-center justify-center ring-4 ring-white/20">
+              <svg class="w-10 h-10 text-white/80" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
               </svg>
             </div>
           </div>
-          <div>
-            <h2 class="text-lg font-semibold">{{ liffStore.profile?.displayName }}</h2>
-            <p class="text-sm text-gray-600">ยินดีต้อนรับสู่ระบบจองคลาส</p>
-          </div>
+          <p class="mt-3 font-semibold">{{ liffStore.profile?.displayName }}</p>
+          <p class="text-xs text-white/70">ยินดีต้อนรับ 👋</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-5 -mt-6 relative">
+      <!-- Progress -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500">กรอกข้อมูลที่จำเป็น</span>
+          <span class="text-xs font-bold" :class="completion === 100 ? 'text-emerald-500' : 'text-primary'">{{ completion }}%</span>
+        </div>
+        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            class="h-full rounded-full transition-all duration-500"
+            :class="completion === 100 ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gradient-to-r from-primary to-emerald-400'"
+            :style="{ width: completion + '%' }"
+          ></div>
         </div>
       </div>
 
-      <!-- Info Banner -->
-      <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
-        <div class="flex items-start">
-          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
-            <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-          </div>
-          <div class="flex-1">
-            <h3 class="font-medium text-blue-800 mb-1">ข้อมูลที่จำเป็น</h3>
-            <p class="text-sm text-blue-700">
-              ฟิลด์ที่มีเครื่องหมาย <span class="text-red-500 font-medium">*</span> 
-              จำเป็นต้องกรอกให้ครบถ้วนก่อนดำเนินการต่อ
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Profile Form -->
-      <form @submit.prevent="submitProfile" class="space-y-6">
+      <form @submit.prevent="submitProfile" class="space-y-5">
         <!-- Personal Information -->
-        <div class="card">
-          <h3 class="text-lg font-semibold mb-4">ข้อมูลส่วนตัว</h3>
-          
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <div class="flex items-center gap-2.5 mb-5">
+            <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            </div>
+            <h3 class="font-bold text-gray-900">ข้อมูลส่วนตัว</h3>
+          </div>
+
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">ชื่อเล่น *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อเล่น <span class="text-red-400">*</span></label>
               <input
                 v-model="form.nickname"
                 type="text"
                 required
                 data-field="nickname"
-                :class="[
-                  'input-field',
-                  errors.nickname ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
-                ]"
+                :class="inputClass('nickname')"
                 placeholder="ชื่อที่ต้องการให้เรียก"
               >
-              <p v-if="errors.nickname" class="text-red-500 text-sm mt-1">{{ errors.nickname }}</p>
+              <p v-if="errors.nickname" class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                {{ errors.nickname }}
+              </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อจริง <span class="text-red-400">*</span></label>
+                <input
+                  v-model="form.firstName"
+                  type="text"
+                  required
+                  data-field="firstName"
+                  :class="inputClass('firstName')"
+                  placeholder="ชื่อจริง"
+                >
+                <p v-if="errors.firstName" class="text-red-500 text-xs mt-1.5">{{ errors.firstName }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">นามสกุล <span class="text-red-400">*</span></label>
+                <input
+                  v-model="form.lastName"
+                  type="text"
+                  required
+                  data-field="lastName"
+                  :class="inputClass('lastName')"
+                  placeholder="นามสกุล"
+                >
+                <p v-if="errors.lastName" class="text-red-500 text-xs mt-1.5">{{ errors.lastName }}</p>
+              </div>
             </div>
 
             <div>
-              <label class="block text-sm font-medium mb-2">ชื่อจริง *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">เลขบัตรประชาชน <span class="text-red-400">*</span></label>
               <input
-                v-model="form.firstName"
+                v-model="form.nationalId"
                 type="text"
+                inputmode="numeric"
+                maxlength="13"
                 required
-                data-field="firstName"
-                :class="[
-                  'input-field',
-                  errors.firstName ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
-                ]"
-                placeholder="ชื่อจริง"
+                data-field="nationalId"
+                :class="[inputClass('nationalId'), 'tracking-[0.15em] font-medium']"
+                placeholder="เลข 13 หลัก"
               >
-              <p v-if="errors.firstName" class="text-red-500 text-sm mt-1">{{ errors.firstName }}</p>
+              <p v-if="errors.nationalId" class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                {{ errors.nationalId }}
+              </p>
+              <p v-else class="text-gray-400 text-xs mt-1.5">{{ form.nationalId.length }}/13 หลัก</p>
             </div>
 
             <div>
-              <label class="block text-sm font-medium mb-2">นามสกุล *</label>
-              <input
-                v-model="form.lastName"
-                type="text"
-                required
-                data-field="lastName"
-                :class="[
-                  'input-field',
-                  errors.lastName ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''
-                ]"
-                placeholder="นามสกุล"
-              >
-              <p v-if="errors.lastName" class="text-red-500 text-sm mt-1">{{ errors.lastName }}</p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium mb-2">เบอร์โทรศัพท์</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">เบอร์โทรศัพท์</label>
               <input
                 v-model="form.phone"
                 type="tel"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                :class="inputClass('phone')"
                 placeholder="08X-XXX-XXXX"
               >
             </div>
 
             <div>
-              <label class="block text-sm font-medium mb-2">วันเกิด</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">วันเกิด</label>
               <input
                 v-model="form.birthDate"
                 type="date"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                :class="inputClass('birthDate')"
               >
             </div>
 
             <div>
-              <label class="block text-sm font-medium mb-2">เพศ</label>
-              <select
-                v-model="form.gender"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="">เลือกเพศ</option>
-                <option value="male">ชาย</option>
-                <option value="female">หญิง</option>
-                <option value="other">อื่นๆ</option>
-              </select>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">เพศ</label>
+              <div class="grid grid-cols-3 gap-2">
+                <button
+                  v-for="g in genders"
+                  :key="g.value"
+                  type="button"
+                  @click="form.gender = g.value"
+                  :class="['py-2.5 rounded-xl text-sm font-medium border transition',
+                    form.gender === g.value
+                      ? 'bg-primary text-white border-primary shadow-sm'
+                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300']"
+                >
+                  {{ g.label }}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-
-        <!-- Exercise Experience -->
-        <div class="card">
-          <h3 class="text-lg font-semibold mb-4">ประสบการณ์การออกกำลังกาย</h3>
-          
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium mb-2">ระดับประสบการณ์ *</label>
-              <select
-                v-model="form.yogaLevel"
-                required
-                data-field="yogaLevel"
-                :class="[
-                  'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2',
-                  errors.yogaLevel 
-                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-gray-300 focus:ring-primary'
-                ]"
-              >
-                <option value="">เลือกระดับ</option>
-                <option value="beginner">มือใหม่ (ไม่เคยออกกำลังกาย)</option>
-                <option value="basic">เริ่มต้น (ออกกำลังกายมาแล้ว 1-6 เดือน)</option>
-                <option value="intermediate">ปานกลาง (ออกกำลังกายมาแล้ว 6 เดือน - 2 ปี)</option>
-                <option value="advanced">ขั้นสูง (ออกกำลังกายมาแล้วมากกว่า 2 ปี)</option>
-              </select>
-              <p v-if="errors.yogaLevel" class="text-red-500 text-sm mt-1">{{ errors.yogaLevel }}</p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium mb-2">เป้าหมายในการออกกำลังกาย</label>
-              <textarea
-                v-model="form.goals"
-                rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="เช่น ต้องการผ่อนคลาย, เพิ่มความยืดหยุ่น, ลดน้ำหนัก, สร้างกล้ามเนื้อ..."
-              ></textarea>
-            </div>
-          </div>
-        </div>
+        </section>
 
         <!-- Health Information -->
-        <div class="card">
-          <h3 class="text-lg font-semibold mb-4">ข้อมูลสุขภาพ</h3>
-          
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <div class="flex items-center gap-2.5 mb-5">
+            <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-500 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </div>
+            <h3 class="font-bold text-gray-900">ข้อมูลสุขภาพ</h3>
+          </div>
+
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">มีปัญหาสุขภาพหรือการบาดเจ็บที่ควรระวังหรือไม่?</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">ปัญหาสุขภาพ/การบาดเจ็บที่ควรระวัง</label>
               <textarea
                 v-model="form.healthIssues"
                 rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                :class="inputClass('healthIssues')"
                 placeholder="เช่น ปวดหลัง, ปัญหาข้อเข่า, ความดันโลหิตสูง... (ถ้าไม่มีให้ใส่ 'ไม่มี')"
               ></textarea>
             </div>
 
-            <div>
-              <label class="flex items-center">
-                <input
-                  v-model="form.emergencyContact.hasContact"
-                  type="checkbox"
-                  class="mr-2"
-                >
-                ต้องการเพิ่มข้อมูลผู้ติดต่อฉุกเฉิน
-              </label>
-            </div>
+            <!-- Emergency contact toggle -->
+            <button
+              type="button"
+              @click="form.emergencyContact.hasContact = !form.emergencyContact.hasContact"
+              class="w-full flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-left"
+            >
+              <div class="flex items-center gap-2.5 min-w-0">
+                <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.2l-2.26 1.13a11 11 0 005.52 5.52l1.13-2.26a1 1 0 011.2-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1C9.7 21 3 14.3 3 6V5z"/></svg>
+                <span class="text-sm font-medium text-gray-700 truncate">เพิ่มผู้ติดต่อฉุกเฉิน</span>
+              </div>
+              <span :class="['relative w-10 h-6 rounded-full transition-colors shrink-0', form.emergencyContact.hasContact ? 'bg-primary' : 'bg-gray-300']">
+                <span :class="['absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform', form.emergencyContact.hasContact ? 'translate-x-4' : '']"></span>
+              </span>
+            </button>
 
-            <div v-if="form.emergencyContact.hasContact" class="space-y-3 pl-6">
+            <div v-if="form.emergencyContact.hasContact" class="space-y-3 rounded-xl bg-gray-50 p-4 border border-gray-100">
               <div>
-                <label class="block text-sm font-medium mb-1">ชื่อผู้ติดต่อฉุกเฉิน</label>
-                <input
-                  v-model="form.emergencyContact.name"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="ชื่อ-นามสกุล"
-                >
+                <label class="block text-xs font-medium text-gray-500 mb-1">ชื่อผู้ติดต่อ</label>
+                <input v-model="form.emergencyContact.name" type="text" :class="inputClass('ecName')" placeholder="ชื่อ-นามสกุล">
               </div>
               <div>
-                <label class="block text-sm font-medium mb-1">เบอร์โทรศัพท์</label>
-                <input
-                  v-model="form.emergencyContact.phone"
-                  type="tel"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="08X-XXX-XXXX"
-                >
+                <label class="block text-xs font-medium text-gray-500 mb-1">เบอร์โทรศัพท์</label>
+                <input v-model="form.emergencyContact.phone" type="tel" :class="inputClass('ecPhone')" placeholder="08X-XXX-XXXX">
               </div>
               <div>
-                <label class="block text-sm font-medium mb-1">ความสัมพันธ์</label>
-                <input
-                  v-model="form.emergencyContact.relationship"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="เช่น พ่อ, แม่, สามี, ภรรยา, เพื่อน"
-                >
+                <label class="block text-xs font-medium text-gray-500 mb-1">ความสัมพันธ์</label>
+                <input v-model="form.emergencyContact.relationship" type="text" :class="inputClass('ecRel')" placeholder="เช่น พ่อ, แม่, สามี, ภรรยา, เพื่อน">
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         <!-- Terms and Conditions -->
-        <div class="card">
+        <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <div class="space-y-3">
-            <div>
-              <label class="flex items-start">
-                <input
-                  v-model="form.acceptTerms"
-                  type="checkbox"
-                  required
-                  class="mr-2 mt-1"
-                >
-                <span class="text-sm">
-                  ฉันยอมรับ<a href="#" class="text-primary underline">ข้อกำหนดและเงื่อนไข</a>การใช้บริการ
-                  และ<a href="#" class="text-primary underline">นโยบายความเป็นส่วนตัว</a> *
-                </span>
-              </label>
-              <p v-if="errors.acceptTerms" class="text-red-500 text-sm mt-1 ml-6">{{ errors.acceptTerms }}</p>
-            </div>
+            <label
+              :class="['flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition',
+                errors.acceptTerms ? 'border-red-300 bg-red-50' : 'border-gray-200']"
+            >
+              <input v-model="form.acceptTerms" type="checkbox" required class="mt-0.5 w-5 h-5 accent-primary shrink-0">
+              <span class="text-sm text-gray-600">
+                ฉันยอมรับ<a href="#" class="text-primary underline">ข้อกำหนดและเงื่อนไข</a>การใช้บริการ
+                และ<a href="#" class="text-primary underline">นโยบายความเป็นส่วนตัว</a> <span class="text-red-400">*</span>
+              </span>
+            </label>
+            <p v-if="errors.acceptTerms" class="text-red-500 text-xs ml-1">{{ errors.acceptTerms }}</p>
 
-            <div>
-              <label class="flex items-start">
-                <input
-                  v-model="form.acceptRisk"
-                  type="checkbox"
-                  required
-                  class="mr-2 mt-1"
-                >
-                <span class="text-sm">
-                  ฉันรับทราบและยอมรับความเสี่ยงในการออกกำลังกาย และจะปฏิบัติตามคำแนะนำของครูผู้สอน *
-                </span>
-              </label>
-              <p v-if="errors.acceptRisk" class="text-red-500 text-sm mt-1 ml-6">{{ errors.acceptRisk }}</p>
-            </div>
+            <label
+              :class="['flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition',
+                errors.acceptRisk ? 'border-red-300 bg-red-50' : 'border-gray-200']"
+            >
+              <input v-model="form.acceptRisk" type="checkbox" required class="mt-0.5 w-5 h-5 accent-primary shrink-0">
+              <span class="text-sm text-gray-600">
+                ฉันรับทราบและยอมรับความเสี่ยงในการออกกำลังกาย และจะปฏิบัติตามคำแนะนำของครูผู้สอน <span class="text-red-400">*</span>
+              </span>
+            </label>
+            <p v-if="errors.acceptRisk" class="text-red-500 text-xs ml-1">{{ errors.acceptRisk }}</p>
           </div>
-        </div>
-
-        <!-- Submit Button -->
-        <div class="mt-8 pt-6">
-          <button
-            type="submit"
-            :disabled="submitting"
-            class="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-semibold text-lg py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            <div class="flex items-center justify-center space-x-3">
-              <span>{{ submitting ? 'กำลังบันทึก...' : 'เริ่มใช้งาน' }}</span>
-              <svg v-if="!submitting" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-              </svg>
-              <div v-else class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          </button>
-          
-          <!-- Additional Info -->
-          <p class="text-center text-sm text-gray-500 mt-4">
-            ข้อมูลของคุณจะถูกเก็บไว้อย่างปลอดภัย
-          </p>
-        </div>
+        </section>
       </form>
     </main>
-    
+
+    <!-- Sticky submit -->
+    <div class="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur-md border-t border-gray-100 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div class="max-w-md mx-auto">
+        <button
+          type="button"
+          @click="submitProfile"
+          :disabled="submitting"
+          class="w-full bg-gradient-to-r from-primary to-primary/90 text-white font-semibold text-base py-3.5 rounded-2xl shadow-lg hover:shadow-xl active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span class="flex items-center justify-center gap-2">
+            <span>{{ submitting ? 'กำลังบันทึก...' : 'เริ่มใช้งาน' }}</span>
+            <svg v-if="!submitting" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            <span v-else class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          </span>
+        </button>
+        <p class="text-center text-[11px] text-gray-400 mt-2 flex items-center justify-center gap-1">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11V11z"/></svg>
+          ข้อมูลของคุณจะถูกเก็บไว้อย่างปลอดภัย
+        </p>
+      </div>
+    </div>
+
     <!-- Loading Overlay -->
-    <LoadingOverlay 
-      :show="submitting" 
+    <LoadingOverlay
+      :show="submitting"
       title="กำลังบันทึกข้อมูล"
       subtitle="กรุณารอสักครู่..."
     />
@@ -324,16 +286,20 @@ const authStore = useAuthStore()
 const submitting = ref(false)
 const errors = ref({})
 
+const genders = [
+  { value: 'male', label: 'ชาย' },
+  { value: 'female', label: 'หญิง' },
+  { value: 'other', label: 'อื่นๆ' }
+]
+
 const form = reactive({
   nickname: '',
   firstName: '',
   lastName: '',
+  nationalId: '',
   phone: '',
   birthDate: '',
   gender: '',
-  yogaLevel: '',
-  interests: [],
-  goals: '',
   healthIssues: '',
   emergencyContact: {
     hasContact: false,
@@ -345,34 +311,96 @@ const form = reactive({
   acceptRisk: false
 })
 
+// อนุญาตเฉพาะอักษรไทย + เว้นวรรค
+const THAI_ONLY = /^[฀-๿\s]+$/
+const isThaiText = (s) => THAI_ONLY.test((s || '').trim())
+
+// ตรวจเลขบัตรประชาชนไทย (13 หลัก + checksum)
+const isValidThaiId = (id) => {
+  if (!/^\d{13}$/.test(id)) return false
+  let sum = 0
+  for (let i = 0; i < 12; i++) sum += parseInt(id.charAt(i), 10) * (13 - i)
+  return (11 - (sum % 11)) % 10 === parseInt(id.charAt(12), 10)
+}
+
+// ตรวจทีละฟิลด์ระหว่างพิมพ์ (เตือนทันที)
+const validateField = (field) => {
+  switch (field) {
+    case 'nickname':
+    case 'firstName':
+    case 'lastName':
+      if (form[field] && !isThaiText(form[field])) {
+        errors.value[field] = 'กรุณากรอกเป็นภาษาไทยเท่านั้น'
+      } else {
+        delete errors.value[field]
+      }
+      break
+    case 'nationalId':
+      // เตือนเฉพาะตอนครบ 13 หลักแล้วแต่ checksum ไม่ผ่าน (ระหว่างพิมพ์ใช้ตัวนับหลักแทน)
+      if (form.nationalId.length === 13 && !isValidThaiId(form.nationalId)) {
+        errors.value.nationalId = 'เลขบัตรประชาชนไม่ถูกต้อง'
+      } else {
+        delete errors.value.nationalId
+      }
+      break
+  }
+}
+
+// คลาส input ที่ใช้ร่วมกัน (มีสถานะ error)
+const inputClass = (field) => [
+  'w-full px-4 py-3 rounded-xl border bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-white transition',
+  errors.value[field] ? 'border-red-400 focus:ring-red-200 focus:border-red-400' : 'border-gray-200 focus:border-primary'
+]
+
+// % ความคืบหน้าของฟิลด์ที่จำเป็น
+const completion = computed(() => {
+  const checks = [
+    !!form.nickname.trim() && isThaiText(form.nickname),
+    !!form.firstName.trim() && isThaiText(form.firstName),
+    !!form.lastName.trim() && isThaiText(form.lastName),
+    isValidThaiId(form.nationalId.trim()),
+    form.acceptTerms,
+    form.acceptRisk
+  ]
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100)
+})
+
 const validateForm = () => {
   errors.value = {}
-  
+
   // Required fields validation
   if (!form.nickname.trim()) {
     errors.value.nickname = 'กรุณากรอกชื่อเล่น'
+  } else if (!isThaiText(form.nickname)) {
+    errors.value.nickname = 'กรุณากรอกเป็นภาษาไทยเท่านั้น'
   }
-  
+
   if (!form.firstName.trim()) {
     errors.value.firstName = 'กรุณากรอกชื่อจริง'
+  } else if (!isThaiText(form.firstName)) {
+    errors.value.firstName = 'กรุณากรอกเป็นภาษาไทยเท่านั้น'
   }
-  
+
   if (!form.lastName.trim()) {
     errors.value.lastName = 'กรุณากรอกนามสกุล'
+  } else if (!isThaiText(form.lastName)) {
+    errors.value.lastName = 'กรุณากรอกเป็นภาษาไทยเท่านั้น'
   }
-  
-  if (!form.yogaLevel) {
-    errors.value.yogaLevel = 'กรุณาเลือกระดับประสบการณ์'
+
+  if (!form.nationalId.trim()) {
+    errors.value.nationalId = 'กรุณากรอกเลขบัตรประชาชน'
+  } else if (!isValidThaiId(form.nationalId.trim())) {
+    errors.value.nationalId = 'เลขบัตรประชาชนไม่ถูกต้อง'
   }
-  
+
   if (!form.acceptTerms) {
     errors.value.acceptTerms = 'กรุณายอมรับข้อกำหนดและเงื่อนไข'
   }
-  
+
   if (!form.acceptRisk) {
     errors.value.acceptRisk = 'กรุณายอมรับความเสี่ยงในการเล่นโยคะ'
   }
-  
+
   return Object.keys(errors.value).length === 0
 }
 
@@ -392,21 +420,19 @@ const onImageError = (event) => {
   event.target.style.display = 'none'
 }
 
-// Clear errors when user starts typing
-watch(() => form.nickname, () => {
-  if (errors.value.nickname) delete errors.value.nickname
-})
+// เตือนแบบ real-time ขณะพิมพ์
+watch(() => form.nickname, () => validateField('nickname'))
+watch(() => form.firstName, () => validateField('firstName'))
+watch(() => form.lastName, () => validateField('lastName'))
 
-watch(() => form.firstName, () => {
-  if (errors.value.firstName) delete errors.value.firstName
-})
-
-watch(() => form.lastName, () => {
-  if (errors.value.lastName) delete errors.value.lastName
-})
-
-watch(() => form.yogaLevel, () => {
-  if (errors.value.yogaLevel) delete errors.value.yogaLevel
+// เลขบัตร: รับเฉพาะตัวเลข สูงสุด 13 หลัก + เตือนทันที
+watch(() => form.nationalId, (val) => {
+  const digits = (val || '').replace(/\D/g, '').slice(0, 13)
+  if (digits !== val) {
+    form.nationalId = digits
+    return // watcher จะรันซ้ำหลังแก้ค่า แล้วค่อย validate
+  }
+  validateField('nationalId')
 })
 
 watch(() => form.acceptTerms, () => {
@@ -422,16 +448,16 @@ const submitProfile = async () => {
   if (!validateForm()) {
     // Show validation errors
     const errorMessages = Object.values(errors.value)
-    
+
     // Scroll to first error field
     const firstErrorField = Object.keys(errors.value)[0]
-    const element = document.querySelector(`[data-field="${firstErrorField}"]`) || 
-                   document.querySelector('.border-red-500')
+    const element = document.querySelector(`[data-field="${firstErrorField}"]`) ||
+                   document.querySelector('.border-red-400')
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' })
       element.focus()
     }
-    
+
     Swal.fire({
       title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
       html: `<div class="text-left">
@@ -446,20 +472,18 @@ const submitProfile = async () => {
     })
     return
   }
-  
+
   submitting.value = true
-  
+
   try {
     const profileData = {
       nickname: form.nickname.trim(),
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
+      nationalId: form.nationalId.trim(),
       phone: form.phone.trim(),
       birthDate: form.birthDate,
       gender: form.gender,
-      yogaLevel: form.yogaLevel,
-      interests: form.interests,
-      goals: form.goals.trim(),
       healthIssues: form.healthIssues.trim(),
       emergencyContact: form.emergencyContact.hasContact ? {
         name: form.emergencyContact.name.trim(),
@@ -471,7 +495,7 @@ const submitProfile = async () => {
     }
 
     await authStore.completeProfileSetup(profileData)
-    
+
     // Show success message
     await Swal.fire({
       title: 'สำเร็จ!',
@@ -480,7 +504,7 @@ const submitProfile = async () => {
       confirmButtonText: 'เริ่มใช้งาน',
       confirmButtonColor: '#00B900'
     })
-    
+
     // Redirect to home
     router.push('/')
   } catch (error) {

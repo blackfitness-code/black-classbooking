@@ -325,9 +325,13 @@
                       isMembershipValid(user) ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-500']">
                       {{ isMembershipValid(user) ? 'ใช้งานได้' : 'หมดอายุ' }}
                     </span>
-                    <span :class="['text-xs px-2 py-0.5 rounded-full font-bold',
-                      (user.memberType || 'gold') === 'platinum' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700']">
-                      {{ (user.memberType || 'gold') === 'platinum' ? 'Platinum' : 'Gold' }}
+                    <span v-if="user.memberType === 'gold' || user.memberType === 'platinum'"
+                      :class="['text-xs px-2 py-0.5 rounded-full font-bold',
+                      user.memberType === 'platinum' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700']">
+                      {{ user.memberType === 'platinum' ? 'Platinum' : 'Gold' }}
+                    </span>
+                    <span v-else class="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-400">
+                      ยังไม่มีแพ็คเกจ
                     </span>
                   </div>
                   <p v-if="user.firstName || user.lastName" class="text-xs text-gray-500 mt-0.5">
@@ -349,8 +353,9 @@
               </div>
               <div>
                 <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">ประเภทสมาชิก</label>
-                <select :value="user.memberType || 'gold'" @change="updateMemberType(user, $event.target.value)"
+                <select :value="user.memberType || ''" @change="updateMemberType(user, $event.target.value)"
                   class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="">ยังไม่มีแพ็คเกจ</option>
                   <option value="gold">Gold</option>
                   <option value="platinum">Platinum</option>
                 </select>
@@ -695,9 +700,8 @@
             <div class="flex-1 min-w-0">
               <p class="font-medium text-gray-900 truncate text-sm">{{ c.name }}</p>
               <div class="flex items-center gap-1.5 mt-0.5">
-                <span :class="['text-[10px] font-bold px-1.5 py-0.5 rounded',
-                  (c.memberType || 'gold') === 'platinum' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700']">
-                  {{ (c.memberType || 'gold').toUpperCase() }}
+                <span :class="['text-[10px] font-bold px-1.5 py-0.5 rounded', pkgChipClass(c.memberType)]">
+                  {{ pkgLabel(c.memberType) }}
                 </span>
                 <span v-if="c.className" class="text-xs text-gray-400 truncate">{{ c.className }}</span>
                 <span v-if="c.membershipValid === false" class="text-[10px] text-red-500 font-medium">หมดอายุ</span>
@@ -740,9 +744,8 @@
             <div class="flex-1 min-w-0">
               <p class="font-medium text-gray-900 truncate text-sm">{{ m.name }}</p>
               <div class="flex items-center gap-1.5 mt-0.5">
-                <span :class="['text-[10px] font-bold px-1.5 py-0.5 rounded',
-                  (m.memberType || 'gold') === 'platinum' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700']">
-                  {{ (m.memberType || 'gold').toUpperCase() }}
+                <span :class="['text-[10px] font-bold px-1.5 py-0.5 rounded', pkgChipClass(m.memberType)]">
+                  {{ pkgLabel(m.memberType) }}
                 </span>
                 <span v-if="m.fullName" class="text-xs text-gray-400 truncate">{{ m.fullName }}</span>
               </div>
@@ -1193,11 +1196,17 @@ const noShows = computed(() => {
         name: u?.nickname || u?.displayName || 'ไม่มีชื่อ',
         fullName: u ? [u.firstName, u.lastName].filter(Boolean).join(' ') : '',
         pictureUrl: u?.pictureUrl || '',
-        memberType: u?.memberType || 'gold'
+        memberType: u?.memberType || ''
       }
     })
     .sort((a, b) => a.name.localeCompare(b.name, 'th'))
 })
+
+// ป้ายแพ็คเกจ (รองรับกรณียังไม่มีแพ็คเกจ)
+const pkgLabel = (t) => t === 'platinum' ? 'PLATINUM' : t === 'gold' ? 'GOLD' : 'ไม่มีแพ็คเกจ'
+const pkgChipClass = (t) => t === 'platinum'
+  ? 'bg-slate-100 text-slate-600'
+  : t === 'gold' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'
 
 // เช็คอินให้สมาชิกเองจากรายชื่อ no-show (ใช้ flow เดิมเพื่อ validate + บันทึก)
 const manualCheckin = (m) => {
@@ -1214,7 +1223,7 @@ const exportNoShowsToCSV = () => {
   const cls = selectedCheckinClass.value
   const headers = ['ชื่อเล่น', 'ชื่อจริง', 'ประเภทสมาชิก', 'คลาส', 'วันที่']
   const rows = noShows.value.map(m => [
-    m.name, m.fullName, (m.memberType || 'gold').toUpperCase(),
+    m.name, m.fullName, pkgLabel(m.memberType),
     cls?.name || '', formatDate(checkinDate.value)
   ])
   const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n')
@@ -1286,14 +1295,10 @@ const handleCheckinScan = async (raw) => {
 
     if (!uid) { showResult({ ok: false, title: 'QR ไม่ถูกต้อง', detail: 'ไม่พบรหัสสมาชิกใน QR' }); return }
 
-    const MOCK_UID = 'U1234567890abcdef1234567890abcdef'
-    let user = users.value.find(u => u.id === uid || u.lineUserId === uid)
-    if (!user && uid === MOCK_UID) {
-      user = { id: MOCK_UID, displayName: 'Test User', nickname: 'Test User', memberType: 'platinum' }
-    }
+    const user = users.value.find(u => u.id === uid || u.lineUserId === uid)
     if (!user) { showResult({ ok: false, title: 'ไม่พบสมาชิก', detail: `รหัส: ${uid}` }); return }
 
-    const valid = uid === MOCK_UID ? true : isMembershipValid(user)
+    const valid = isMembershipValid(user)
 
     // Per-class QR: lock check-in to that class and verify the booking is real
     let cls = selectedCheckinClass.value
@@ -1330,7 +1335,7 @@ const handleCheckinScan = async (raw) => {
     const entry = {
       id: now.getTime().toString(), uid,
       name: user.nickname || user.displayName || '',
-      memberType: user.memberType || 'gold', pictureUrl: user.pictureUrl,
+      memberType: user.memberType || '', pictureUrl: user.pictureUrl,
       classId: cls?.id || '', className, time: format(now, 'HH:mm')
     }
     todayCheckins.value.unshift(entry)
@@ -2141,7 +2146,7 @@ const exportUsersToCSV = () => {
     u.lineUserId || u.id || '',
     u.nickname || u.displayName || '', u.firstName || '', u.lastName || '',
     u.phone || '', toDateStr(u.birthDate), u.gender || '',
-    (u.memberType || 'gold').toUpperCase(), toDateStr(u.membershipExpiry),
+    pkgLabel(u.memberType), toDateStr(u.membershipExpiry),
     isMembershipValid(u) ? 'ใช้งานได้' : 'หมดอายุ', u.role === 'admin' ? 'Admin' : 'User',
     u.emergencyContact?.name || '', u.emergencyContact?.phone || '', u.emergencyContact?.relationship || '',
     toDateStr(u.createdAt)

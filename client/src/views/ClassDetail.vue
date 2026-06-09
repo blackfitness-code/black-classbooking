@@ -161,8 +161,8 @@
           </div>
         </div>
 
-        <!-- Membership Warning -->
-        <div v-else-if="!authStore.isMembershipValid()" class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-4">
+        <!-- Membership Expired -->
+        <div v-else-if="!authStore.isMembershipValid() && authStore.userProfile?.membershipExpiry" class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-4">
           <div class="flex items-center">
             <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-3">
               <svg class="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
@@ -170,14 +170,18 @@
               </svg>
             </div>
             <div class="flex-1">
-              <p class="font-medium text-orange-800">
-                {{ !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ' }}
-              </p>
-              <p class="text-sm text-orange-600">
-                {{ !authStore.userProfile?.membershipExpiry ? 'โปรดติดต่อแอดมินเพื่อสมัครสมาชิก' : 'กรุณาต่ออายุสมาชิกเพื่อจองคลาส' }}
-              </p>
+              <p class="font-medium text-orange-800">สมาชิกหมดอายุ</p>
+              <p class="text-sm text-orange-600">กรุณาต่ออายุสมาชิกเพื่อจองคลาส</p>
             </div>
           </div>
+        </div>
+        <!-- Checking / no membership data → small icon -->
+        <div v-else-if="!authStore.isMembershipValid()">
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-400" title="ระบบกำลังตรวจสอบข้อมูล · โปรดติดต่อแอดมินเพื่อสมัครสมาชิก">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+          </span>
         </div>
 
         <!-- Booking Status -->
@@ -340,6 +344,7 @@ const canBook = () => {
   if (!yogaClass.value) return false
   if (authStore.isCooldownActive()) return false
   if (!authStore.isMembershipValid()) return false
+  if (authStore.userProfile?.memberType === 'gold') return false
   if (yogaClass.value.currentBookings >= yogaClass.value.maxCapacity) return false
   if (isAlreadyBooked.value) return false
   
@@ -356,6 +361,7 @@ const getBookingButtonText = () => {
   if (!authStore.isMembershipValid()) {
     return !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ'
   }
+  if (authStore.userProfile?.memberType === 'gold') return 'แพ็คเกจ Gold จองคลาสไม่ได้'
   if (yogaClass.value.currentBookings >= yogaClass.value.maxCapacity) return 'เต็มแล้ว'
   if (isAlreadyBooked.value) return 'จองแล้ว'
   
@@ -414,7 +420,11 @@ const bookClass = () => {
 
 const confirmBooking = async () => {
   if (!yogaClass.value || booking.value) return
-  
+  if (authStore.userProfile?.memberType === 'gold') {
+    Swal.fire({ title: 'จองไม่ได้', text: 'แพ็คเกจ Gold ไม่สามารถจองคลาสได้', icon: 'warning', confirmButtonText: 'ตกลง' })
+    return
+  }
+
   booking.value = true
   try {
     const classRef = doc(db, 'classes', yogaClass.value.id)

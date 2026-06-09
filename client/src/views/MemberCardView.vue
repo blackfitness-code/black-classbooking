@@ -30,7 +30,7 @@
         :full-name="member.fullName"
         :profile-picture-url="member.pictureUrl"
         :membership-expiry="member.membershipExpiry"
-        :member-type="member.memberType || 'gold'"
+        :member-type="member.memberType || ''"
         :member-id="member.lineUserId"
       />
     </div>
@@ -75,7 +75,7 @@ async function loadById(id) {
         fullName: [data.firstName, data.lastName].filter(Boolean).join(' '),
         pictureUrl: data.pictureUrl || '',
         membershipExpiry: expiry,
-        memberType: data.memberType || 'gold'
+        memberType: data.memberType || ''
       }
     }
   } catch {
@@ -114,7 +114,7 @@ async function resolveOwnCard() {
     fullName: [profile.firstName, profile.lastName].filter(Boolean).join(' '),
     pictureUrl: profile.pictureUrl || liffStore.profile?.pictureUrl || '',
     membershipExpiry: profile.membershipExpiry,
-    memberType: profile.memberType || 'gold'
+    memberType: profile.memberType || ''
   }
   loading.value = false
 }

@@ -35,7 +35,7 @@
           :full-name="memberFullName"
           :profile-picture-url="profilePictureUrl"
           :membership-expiry="authStore.userProfile?.membershipExpiry"
-          :member-type="authStore.userProfile?.memberType || 'gold'"
+          :member-type="authStore.userProfile?.memberType || ''"
           :member-id="authStore.userProfile?.lineUserId || liffStore.profile?.userId"
           @image-error="handleImageError"
           @refresh="refreshProfile"
@@ -109,8 +109,8 @@
       <div v-if="showMainMenu" class="mt-8">
         <h3 class="section-title">เมนูหลัก</h3>
 
-        <!-- Membership Status Banner -->
-        <div v-if="!authStore.isMembershipValid()" class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-4 mb-6">
+        <!-- Membership Expired Banner -->
+        <div v-if="!authStore.isMembershipValid() && authStore.userProfile?.membershipExpiry" class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-4 mb-6">
           <div class="flex items-center">
             <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-3 shrink-0">
               <svg class="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
@@ -118,14 +118,18 @@
               </svg>
             </div>
             <div class="flex-1">
-              <p class="font-medium text-orange-800">
-                {{ !authStore.userProfile?.membershipExpiry ? 'ระบบกำลังตรวจสอบข้อมูล' : 'สมาชิกหมดอายุ' }}
-              </p>
-              <p class="text-sm text-orange-600">
-                {{ !authStore.userProfile?.membershipExpiry ? '' : 'กรุณาต่ออายุสมาชิกเพื่อจองคลาส' }}
-              </p>
+              <p class="font-medium text-orange-800">สมาชิกหมดอายุ</p>
+              <p class="text-sm text-orange-600">กรุณาต่ออายุสมาชิกเพื่อจองคลาส</p>
             </div>
           </div>
+        </div>
+        <!-- Checking / no membership data → small icon -->
+        <div v-else-if="!authStore.userProfile?.membershipExpiry" class="mb-6">
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-400" title="ระบบกำลังตรวจสอบข้อมูล">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+          </span>
         </div>
 
         <!-- Menu Grid -->
