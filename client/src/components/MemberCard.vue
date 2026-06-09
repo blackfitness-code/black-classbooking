@@ -24,6 +24,11 @@
         class="absolute -right-6 -bottom-6 w-44 h-44 object-cover rounded-full grayscale pointer-events-none select-none"
       >
 
+      <!-- shine sweep (วับๆ วิบๆ) -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none rounded-3xl">
+        <div class="card-shine" :class="isPending ? 'opacity-40' : 'opacity-100'"></div>
+      </div>
+
       <div class="relative h-full p-6 flex flex-col justify-between">
         <!-- top: photo (left) + tier pill (right) -->
         <div class="flex items-start justify-between">
@@ -48,13 +53,15 @@
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 2h12M6 22h12M7 2v4.2a4 4 0 002 3.46L12 12l-3 2.34A4 4 0 007 17.8V22M17 2v4.2a4 4 0 01-2 3.46L12 12l3 2.34A4 4 0 0117 17.8V22"/></svg>
             PENDING
           </span>
-          <span v-else-if="tier === 'gold'" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-b from-amber-200 to-amber-400 text-amber-900 text-[11px] font-bold tracking-widest shadow-md">
+          <span v-else-if="tier === 'gold'" class="relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-b from-amber-200 to-amber-400 text-amber-900 text-[11px] font-bold tracking-widest shadow-md">
             <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 4L12 4l3.5 5L21 5l-2 11H5zm0 2h14v2H5v-2z"/></svg>
             GOLD
+            <span class="pill-shine"></span>
           </span>
-          <span v-else class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-b from-gray-100 to-gray-300 text-gray-700 text-[11px] font-bold tracking-widest shadow-md">
+          <span v-else class="relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-b from-gray-100 to-gray-300 text-gray-700 text-[11px] font-bold tracking-widest shadow-md">
             <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 4L12 4l3.5 5L21 5l-2 11H5zm0 2h14v2H5v-2z"/></svg>
             PLATINUM
+            <span class="pill-shine"></span>
           </span>
         </div>
 
@@ -161,3 +168,47 @@ const cfg = computed(() => {
   }
 })
 </script>
+
+<style scoped>
+.card-shine {
+  position: absolute;
+  top: -60%;
+  left: -75%;
+  width: 45%;
+  height: 220%;
+  transform: rotate(22deg);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 40%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.05) 60%,
+    transparent 100%
+  );
+  animation: card-shine-sweep 5.5s ease-in-out infinite;
+}
+@keyframes card-shine-sweep {
+  0% { left: -75%; }
+  35%, 100% { left: 130%; }
+}
+
+/* glint บนป้าย tier */
+.pill-shine {
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 55%;
+  height: 100%;
+  transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  animation: pill-shine-sweep 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes pill-shine-sweep {
+  0% { left: -120%; }
+  45%, 100% { left: 160%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-shine, .pill-shine { animation: none; }
+}
+</style>
