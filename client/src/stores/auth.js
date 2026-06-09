@@ -8,8 +8,14 @@ export const useAuthStore = defineStore('auth', {
     userProfile: null,
     isAuthenticated: false,
     isAdmin: false,
+    isStaff: false,
     needsProfileSetup: false
   }),
+
+  getters: {
+    // staff หรือ admin เข้าหน้าจัดการได้ (staff สิทธิ์จำกัด)
+    canAccessAdmin: (state) => state.isAdmin || state.isStaff
+  },
 
   actions: {
     async signInWithLineUserId(lineUserId, displayName, pictureUrl) {
@@ -22,6 +28,7 @@ export const useAuthStore = defineStore('auth', {
         if (!userDoc.exists()) {
           this.needsProfileSetup = true
           this.isAdmin = false
+          this.isStaff = false
           localStorage.setItem('needsProfileSetup', 'true')
           localStorage.removeItem('userProfile')
         } else {
@@ -33,6 +40,7 @@ export const useAuthStore = defineStore('auth', {
 
           this.userProfile = { id: userDoc.id, ...userData, lineUserId, displayName, pictureUrl }
           this.isAdmin = userData.role === 'admin'
+          this.isStaff = userData.role === 'staff'
           this.needsProfileSetup = false
 
           localStorage.setItem('userProfile', JSON.stringify(this.userProfile))
@@ -60,6 +68,7 @@ export const useAuthStore = defineStore('auth', {
             if (parsed.lineUserId === lineUserId) {
               this.userProfile = parsed
               this.isAdmin = parsed.role === 'admin'
+              this.isStaff = parsed.role === 'staff'
               this.needsProfileSetup = false
               return this.userProfile
             }
@@ -68,6 +77,7 @@ export const useAuthStore = defineStore('auth', {
 
         this.needsProfileSetup = true
         this.isAdmin = false
+        this.isStaff = false
         localStorage.setItem('needsProfileSetup', 'true')
         return this.userProfile
       }
@@ -102,6 +112,7 @@ export const useAuthStore = defineStore('auth', {
           this.userProfile = JSON.parse(storedProfile)
           this.isAuthenticated = true
           this.isAdmin = this.userProfile.role === 'admin'
+          this.isStaff = this.userProfile.role === 'staff'
           this.needsProfileSetup = needsSetup === 'true'
           return this.userProfile
         } catch {}
@@ -124,6 +135,7 @@ export const useAuthStore = defineStore('auth', {
           if (JSON.stringify(this.userProfile) !== JSON.stringify(freshData)) {
             this.userProfile = freshData
             this.isAdmin = freshData.role === 'admin'
+            this.isStaff = freshData.role === 'staff'
             localStorage.setItem('userProfile', JSON.stringify(freshData))
           }
         }
@@ -135,6 +147,7 @@ export const useAuthStore = defineStore('auth', {
       this.userProfile = null
       this.isAuthenticated = false
       this.isAdmin = false
+      this.isStaff = false
       this.needsProfileSetup = false
       localStorage.removeItem('userProfile')
       localStorage.removeItem('needsProfileSetup')

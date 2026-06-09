@@ -9,7 +9,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
           </button>
-          <h1 class="text-lg font-bold text-gray-900 flex-1">Admin Panel</h1>
+          <h1 class="text-lg font-bold text-gray-900 flex-1">{{ isStaff ? 'Staff Panel' : 'Admin Panel' }}</h1>
           <button @click="refreshData" :disabled="isLoading"
             class="p-2 rounded-xl hover:bg-gray-100 transition-colors disabled:opacity-40">
             <svg :class="['w-5 h-5 text-gray-500', isLoading && 'animate-spin']"
@@ -22,7 +22,7 @@
 
         <!-- Tab Navigation -->
         <nav class="flex overflow-x-auto scrollbar-hide -mx-4 px-4">
-          <button v-for="tab in tabs" :key="tab.value" @click="activeSection = tab.value"
+          <button v-for="tab in visibleTabs" :key="tab.value" @click="activeSection = tab.value"
             :class="['flex items-center gap-1.5 py-2.5 px-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap shrink-0',
               activeSection === tab.value
                 ? 'border-primary text-primary'
@@ -274,7 +274,7 @@
             <h2 class="text-lg font-bold text-gray-900">จัดการสมาชิก</h2>
             <p class="text-xs text-gray-400">{{ filteredUsers.length }} คน</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div v-if="!isStaff" class="flex items-center gap-2">
             <input ref="importFileInput" type="file" accept=".csv,text/csv" class="hidden" @change="onImportFile">
             <button @click="triggerImport" :disabled="importing"
               class="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50">
@@ -360,6 +360,7 @@
                 <div class="flex items-center gap-1.5">
                   <h4 class="font-bold text-gray-900 truncate">{{ user.nickname || user.displayName || 'ไม่มีชื่อ' }}</h4>
                   <span v-if="user.role === 'admin'" class="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-violet-100 text-violet-700 shrink-0">ADMIN</span>
+                  <span v-else-if="user.role === 'staff'" class="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-sky-100 text-sky-700 shrink-0">STAFF</span>
                 </div>
                 <div class="flex items-center gap-1.5 mt-1 flex-wrap">
                   <span :class="['text-[10px] px-1.5 py-0.5 rounded-full font-semibold',
@@ -384,12 +385,13 @@
                 {{ user.firstName }} {{ user.lastName }}
               </p>
 
-              <div class="grid grid-cols-2 gap-3">
-                <div>
+              <div :class="isStaff ? '' : 'grid grid-cols-2 gap-3'">
+                <div v-if="!isStaff">
                   <label class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Role</label>
                   <select :value="user.role || 'user'" @change="updateUserRole(user, $event.target.value)"
                     class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary">
                     <option value="user">User</option>
+                    <option value="staff">Staff</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
@@ -418,7 +420,7 @@
               </div>
 
               <!-- Cooldown Section -->
-              <div class="pt-1">
+              <div v-if="!isStaff" class="pt-1">
                 <div class="flex items-center justify-between mb-1.5">
                   <label class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Cooldown (ระงับการจอง)</label>
                   <span v-if="isUserInCooldown(user)" class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">
@@ -449,7 +451,7 @@
               </div>
 
               <!-- Edit / Delete -->
-              <div class="flex gap-2 pt-3 border-t border-gray-100">
+              <div v-if="!isStaff" class="flex gap-2 pt-3 border-t border-gray-100">
                 <button @click="openEditUser(user)"
                   class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-primary/10 text-primary rounded-xl text-sm font-semibold hover:bg-primary/20 transition-colors">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -1241,7 +1243,19 @@ const tabs = [
   { value: 'classTypes', label: 'ประเภทคลาส', icon: '🏷️' },
 ]
 
-const activeSection = ref('dashboard')
+// staff = สิทธิ์จำกัด (ตั้งวันหมดอายุ + แพ็คเกจ + สแกน QR เท่านั้น)
+const isStaff = computed(() => authStore.isStaff && !authStore.isAdmin)
+const visibleTabs = computed(() =>
+  isStaff.value ? tabs.filter(t => ['users', 'checkin'].includes(t.value)) : tabs
+)
+
+const activeSection = ref(isStaff.value ? 'checkin' : 'dashboard')
+// กัน staff หลุดไปอยู่แท็บที่ไม่มีสิทธิ์
+watch(visibleTabs, (list) => {
+  if (!list.some(t => t.value === activeSection.value)) {
+    activeSection.value = list[0]?.value || 'checkin'
+  }
+}, { immediate: true })
 const classes = ref([])
 const users = ref([])
 const allBookings = ref([])
@@ -2533,7 +2547,7 @@ const exportUsersToCSV = () => {
     u.nickname || u.displayName || '', u.firstName || '', u.lastName || '',
     u.phone || '', toDateStr(u.birthDate), u.gender || '',
     pkgLabel(u.memberType), toDateStr(u.membershipExpiry),
-    isMembershipValid(u) ? 'ใช้งานได้' : 'หมดอายุ', u.role === 'admin' ? 'Admin' : 'User',
+    isMembershipValid(u) ? 'ใช้งานได้' : 'หมดอายุ', u.role === 'admin' ? 'Admin' : u.role === 'staff' ? 'Staff' : 'User',
     u.emergencyContact?.name || '', u.emergencyContact?.phone || '', u.emergencyContact?.relationship || '',
     toDateStr(u.createdAt)
   ])

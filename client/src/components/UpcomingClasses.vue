@@ -2,13 +2,13 @@
   <div v-if="loading || upcoming.length > 0" class="mt-8">
     <div class="flex items-center justify-between mb-1">
       <h3 class="section-title mb-0">คลาสที่กำลังจะมา</h3>
-      <router-link to="/history" class="text-xs text-primary font-semibold">ดูทั้งหมด →</router-link>
+      <router-link to="/history" class="text-xs text-secondary font-semibold">ดูทั้งหมด →</router-link>
     </div>
-    <p class="text-xs text-gray-400 mb-4">แตะการ์ดเพื่อแสดง QR ให้เจ้าหน้าที่สแกนเช็คอิน</p>
+    <p class="text-xs text-gray-400 mb-4">แตะการ์ดเพื่อแสดงข้อมูลสำหรับเข้าร่วมคลาส</p>
 
     <!-- Skeleton -->
     <div v-if="loading" class="space-y-3">
-      <div v-for="i in 2" :key="i" class="rounded-3xl bg-gradient-to-br from-gray-900 via-gray-950 to-black p-3 flex items-center gap-4">
+      <div v-for="i in 2" :key="i" class="rounded-3xl bg-[linear-gradient(135deg,#2b2f36_0%,#15171b_45%,#000000_100%)] p-3 flex items-center gap-4">
         <div class="w-12 h-16 rounded-xl bg-white/10 shrink-0 animate-pulse"></div>
         <div class="flex-1 space-y-2">
           <div class="h-4 w-3/4 bg-white/10 rounded animate-pulse"></div>
@@ -24,7 +24,7 @@
         v-for="b in upcoming"
         :key="b.id"
         @click="openQr(b)"
-        class="group w-full text-left rounded-3xl p-3 flex items-center gap-3 shadow-lg transition-all hover:shadow-xl active:scale-[0.99] bg-gradient-to-br from-gray-900 via-gray-950 to-black"
+        class="group w-full text-left rounded-3xl p-3 flex items-center gap-3 shadow-lg transition-all hover:shadow-xl active:scale-[0.99] bg-[linear-gradient(135deg,#2b2f36_0%,#15171b_45%,#000000_100%)]"
       >
         <!-- Date column -->
         <div class="shrink-0 pl-2 pr-4 border-r border-white/10 flex flex-col items-center text-white">
@@ -112,8 +112,7 @@
                 <svg class="w-4 h-4 text-white/50" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 ครู {{ qrBooking.instructor }}
               </p>
-              <p class="text-white/60 text-sm mt-2">ให้เจ้าหน้าที่สแกนเพื่อเช็คอินเข้าคลาส</p>
-              <p class="text-white/30 text-xs mt-1">ระบบจะตรวจสอบการจองอัตโนมัติ</p>
+              <p class="text-white/60 text-sm mt-2">กรุณาแสดงหน้านี้แก่เจ้าหน้าที่ก่อนเข้าคลาส</p>
             </div>
           </div>
         </div>

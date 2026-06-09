@@ -22,7 +22,7 @@
         class="absolute -right-6 -bottom-6 w-44 h-44 object-cover rounded-full opacity-[0.06] grayscale pointer-events-none select-none"
       >
 
-      <div class="relative h-full p-6 flex flex-col" :class="hasPackage ? 'justify-between' : 'gap-4'">
+      <div class="relative h-full p-6 flex flex-col justify-between">
         <!-- top: photo (left) + tier chip (right) -->
         <div class="flex items-start justify-between">
           <div class="relative shrink-0">
@@ -41,6 +41,10 @@
           <span v-if="hasPackage" :class="modernTierChip">
             <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 4L12 4l3.5 5L21 5l-2 11H5zm0 2h14v2H5v-2z"/></svg>
             {{ tierLabel }}
+          </span>
+          <span v-else class="inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-full tracking-widest bg-white/10 text-white/70 border border-white/15">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            PENDING
           </span>
         </div>
 
@@ -63,6 +67,12 @@
             <p class="text-gray-500 text-[10px] tracking-wider uppercase mb-1">หมดอายุ</p>
             <p class="text-white text-sm font-semibold">{{ expiryLine }}</p>
           </div>
+        </div>
+
+        <!-- pending: ยังไม่มีแพ็คเกจ -->
+        <div v-else class="flex items-center gap-1.5 text-white/45 text-xs">
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          ระบบกำลังตรวจสอบข้อมูล
         </div>
       </div>
     </div>

@@ -53,7 +53,7 @@
         </router-link>
 
         <router-link
-          v-if="authStore.isAdmin"
+          v-if="authStore.canAccessAdmin"
           to="/admin"
           :class="[
             'flex flex-col items-center py-2 px-2 sm:px-3 rounded-lg transition-all min-w-0 flex-1',

@@ -78,7 +78,7 @@ router.beforeEach((to, from, next) => {
         return
     }
 
-    if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    if (to.meta.requiresAdmin && !authStore.canAccessAdmin) {
         next('/')
         return
     }

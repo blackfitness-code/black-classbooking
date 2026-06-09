@@ -17,13 +17,40 @@
     <!-- Main Content -->
     <main class="max-w-md mx-auto px-6 py-6">
 
-      <!-- Profile Card skeleton while loading -->
-      <div v-if="isLoading" class="card mb-6">
-        <div class="flex items-center space-x-4">
-          <div class="skeleton w-14 h-14 rounded-full"></div>
+      <!-- Skeleton while loading (matches member card + menu) -->
+      <div v-if="isLoading" class="animate-fade-in">
+        <!-- member card skeleton -->
+        <div class="relative overflow-hidden rounded-3xl shadow-2xl aspect-[1.586/1] mb-6 p-6 flex flex-col justify-between bg-[linear-gradient(135deg,#2b2f36_0%,#15171b_45%,#000000_100%)]">
+          <div class="flex items-start justify-between">
+            <div class="w-14 h-14 rounded-2xl bg-white/10 animate-pulse"></div>
+            <div class="w-24 h-7 rounded-full bg-white/10 animate-pulse"></div>
+          </div>
+          <div class="space-y-2">
+            <div class="h-6 w-1/2 bg-white/10 rounded-lg animate-pulse"></div>
+            <div class="h-3 w-1/3 bg-white/10 rounded animate-pulse"></div>
+          </div>
+          <div class="flex items-end justify-between">
+            <div class="h-7 w-20 bg-white/10 rounded animate-pulse"></div>
+            <div class="h-7 w-24 bg-white/10 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        <!-- upcoming class skeleton -->
+        <div class="rounded-3xl bg-[linear-gradient(135deg,#2b2f36_0%,#15171b_45%,#000000_100%)] p-3 flex items-center gap-4 mb-8">
+          <div class="w-12 h-16 rounded-xl bg-white/10 shrink-0 animate-pulse"></div>
           <div class="flex-1 space-y-2">
-            <div class="skeleton h-4 w-2/3"></div>
-            <div class="skeleton h-3 w-1/2"></div>
+            <div class="h-4 w-3/4 bg-white/10 rounded animate-pulse"></div>
+            <div class="h-3 w-1/3 bg-white/10 rounded animate-pulse"></div>
+          </div>
+          <div class="w-20 h-12 rounded-2xl bg-white/10 shrink-0 animate-pulse"></div>
+        </div>
+
+        <!-- menu skeleton -->
+        <div class="h-5 w-24 skeleton rounded mb-4"></div>
+        <div class="grid grid-cols-2 gap-4">
+          <div v-for="n in 2" :key="n" class="card flex flex-col items-center justify-center gap-3 py-7">
+            <div class="w-14 h-14 rounded-2xl skeleton"></div>
+            <div class="h-3 w-16 skeleton rounded"></div>
           </div>
         </div>
       </div>
@@ -103,14 +130,15 @@
       <UpcomingClasses
         v-if="showMainMenu"
         :user-id="authStore.userProfile?.lineUserId || liffStore.profile?.userId"
+        :limit="1"
       />
 
       <!-- Quick Actions -->
       <div v-if="showMainMenu" class="mt-8">
         <h3 class="section-title">เมนูหลัก</h3>
 
-        <!-- Membership Expired Banner -->
-        <div v-if="!authStore.isMembershipValid() && authStore.userProfile?.membershipExpiry" class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-4 mb-6">
+        <!-- Membership Expired Banner (เฉพาะคนมีแพ็คเกจที่หมดอายุ — pending ไม่แสดงอะไร) -->
+        <div v-if="!isPending && !authStore.isMembershipValid()" class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-4 mb-6">
           <div class="flex items-center">
             <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-3 shrink-0">
               <svg class="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
@@ -122,14 +150,6 @@
               <p class="text-sm text-orange-600">กรุณาต่ออายุสมาชิกเพื่อจองคลาส</p>
             </div>
           </div>
-        </div>
-        <!-- Checking / no membership data → small icon -->
-        <div v-else-if="!authStore.userProfile?.membershipExpiry" class="mb-6">
-          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-400" title="ระบบกำลังตรวจสอบข้อมูล">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-            </svg>
-          </span>
         </div>
 
         <!-- Menu Grid -->
@@ -261,6 +281,11 @@ const showMainMenu = computed(() =>
 const memberFullName = computed(() =>
   [authStore.userProfile?.firstName, authStore.userProfile?.lastName]
     .filter(Boolean).join(' ')
+)
+
+// pending = ยังไม่มีแพ็คเกจ (ไม่ใช่ gold/platinum)
+const isPending = computed(() =>
+  !['gold', 'platinum'].includes(authStore.userProfile?.memberType)
 )
 
 const profilePictureUrl = computed(() => {
