@@ -1827,7 +1827,10 @@ const loadCustomClassTypes = async () => {
       customClassSettings.value = snap.data()
     }
   } catch (err) {
-    console.error('Error loading custom class types:', err)
+    // Ignore permission errors - settings collection may not exist yet
+    if (err.code !== 'permission-denied') {
+      console.error('Error loading custom class types:', err)
+    }
   }
 }
 
