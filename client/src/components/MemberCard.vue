@@ -173,23 +173,23 @@ const cfg = computed(() => {
 .card-shine {
   position: absolute;
   top: -60%;
-  left: -75%;
-  width: 45%;
+  left: -80%;
+  width: 60%;
   height: 220%;
   transform: rotate(22deg);
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.05) 40%,
-    rgba(255, 255, 255, 0.18) 50%,
-    rgba(255, 255, 255, 0.05) 60%,
+    rgba(255, 255, 255, 0.10) 38%,
+    rgba(255, 255, 255, 0.40) 50%,
+    rgba(255, 255, 255, 0.10) 62%,
     transparent 100%
   );
-  animation: card-shine-sweep 5.5s ease-in-out infinite;
+  animation: card-shine-sweep 3.6s ease-in-out infinite;
 }
 @keyframes card-shine-sweep {
-  0% { left: -75%; }
-  35%, 100% { left: 130%; }
+  0% { left: -80%; }
+  55%, 100% { left: 140%; }
 }
 
 /* glint บนป้าย tier */

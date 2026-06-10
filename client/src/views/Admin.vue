@@ -1794,8 +1794,22 @@ const loadAllData = async (forceRefresh = false) => {
       if (aP && !bP) return 1; if (!aP && bP) return -1
       return aP ? db_ - da : da - db_
     })
-    users.value = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-    const bookingsData = bookingsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+    users.value = usersSnap.docs.map(d => {
+      const data = d.data()
+      // Convert Firestore Timestamps to Date for cache
+      if (data.membershipExpiry?.toDate) data.membershipExpiry = data.membershipExpiry.toDate()
+      if (data.cooldownUntil?.toDate) data.cooldownUntil = data.cooldownUntil.toDate()
+      if (data.createdAt?.toDate) data.createdAt = data.createdAt.toDate()
+      if (data.updatedAt?.toDate) data.updatedAt = data.updatedAt.toDate()
+      return { id: d.id, ...data }
+    })
+    const bookingsData = bookingsSnap.docs.map(d => {
+      const data = d.data()
+      if (data.bookedAt?.toDate) data.bookedAt = data.bookedAt.toDate()
+      if (data.cancelledAt?.toDate) data.cancelledAt = data.cancelledAt.toDate()
+      if (data.canCancelUntil?.toDate) data.canCancelUntil = data.canCancelUntil.toDate()
+      return { id: d.id, ...data }
+    })
     classBookings.value = bookingsData
     allBookings.value = [...bookingsData].sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`))
     setCachedData(CACHE_KEYS.ADMIN_CLASSES, classes.value)

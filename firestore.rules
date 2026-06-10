@@ -1,30 +1,111 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users collection - users can read/write their own data
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function getUserRole(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && getUserRole(request.auth.uid) in ['admin'];
+    }
+    
+    function isStaffOrAdmin() {
+      return isAuthenticated() && getUserRole(request.auth.uid) in ['admin', 'staff'];
+    }
+    
+    function isMembershipValid() {
+      let user = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return user.membershipExpiry != null && user.membershipExpiry > request.time;
+    }
+    
+    // Users collection
     match /users/{userId} {
-      allow read, write: if true; // Allow all for now, implement auth later
+      // อ่านได้เฉพาะตัวเอง หรือ staff/admin
+      allow read: if isOwner(userId) || isStaffOrAdmin();
+      
+      // สร้าง user ใหม่ได้ (LINE LIFF registration)
+      allow create: if isOwner(userId) 
+                    && request.resource.data.role == 'user'
+                    && request.resource.data.lineUserId == userId;
+      
+      // แก้ไขได้เฉพาะตัวเอง (แต่ห้ามแก้ role, membershipExpiry, cooldownUntil)
+      allow update: if isOwner(userId) 
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'membershipExpiry', 'cooldownUntil']);
+      
+      // Admin แก้ไข membership/role/cooldown ได้
+      allow update: if isAdmin();
+      
+      // ห้ามลบ
+      allow delete: if false;
     }
     
-    // Classes collection - readable by all, writable by admin
+    // Classes collection
     match /classes/{classId} {
+      // อ่านได้ทุกคน
       allow read: if true;
-      allow write: if true; // Allow all for now, implement admin check later
+      
+      // เขียนได้เฉพาะ admin
+      allow create, update, delete: if isAdmin();
     }
     
-    // Bookings collection - users can read/write their own bookings
+    // Bookings collection
     match /bookings/{bookingId} {
-      allow read, write: if true; // Allow all for now, implement user check later
+      // อ่านได้เฉพาะเจ้าของ หรือ staff/admin
+      allow read: if isAuthenticated() 
+                  && (resource.data.userId == request.auth.uid || isStaffOrAdmin());
+      
+      // สร้างการจองได้ถ้า:
+      // - เป็นเจ้าของ
+      // - membership ยังไม่หมดอายุ
+      // - status = confirmed
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid
+                    && isMembershipValid()
+                    && request.resource.data.status == 'confirmed';
+      
+      // ยกเลิกได้เฉพาะเจ้าของ (เปลี่ยน status เป็น cancelled)
+      allow update: if isAuthenticated()
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.status == 'cancelled'
+                    && resource.data.status == 'confirmed';
+      
+      // Admin/Staff อัปเดตได้ทุกอย่าง
+      allow update: if isStaffOrAdmin();
+      
+      // ห้ามลบ
+      allow delete: if false;
     }
-
-    // Check-ins collection - QR check-in records (admin scanner)
+    
+    // Check-ins collection
     match /checkins/{checkinId} {
-      allow read, write: if true; // Allow all for now, implement admin check later
+      // อ่านได้เฉพาะเจ้าของ หรือ staff/admin
+      allow read: if isAuthenticated() 
+                  && (resource.data.userId == request.auth.uid || isStaffOrAdmin());
+      
+      // สร้างได้เฉพาะ staff/admin
+      allow create: if isStaffOrAdmin();
+      
+      // ห้ามแก้ไข/ลบ
+      allow update, delete: if false;
     }
-
-    // Settings collection - admin config (class types, etc.)
+    
+    // Settings collection
     match /settings/{document} {
-      allow read, write: if true; // Allow all for now, implement admin check later
+      // อ่านได้ทุกคน
+      allow read: if true;
+      
+      // เขียนได้เฉพาะ admin
+      allow write: if isAdmin();
     }
   }
 }
