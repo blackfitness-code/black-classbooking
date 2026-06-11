@@ -2480,6 +2480,12 @@ const onImportFile = async (e) => {
       return (user[key] || '') === (val || '')
     }
 
+    const FIELD_LABELS = {
+      nickname: 'ชื่อเล่น', firstName: 'ชื่อจริง', lastName: 'นามสกุล',
+      phone: 'เบอร์โทร', birthDate: 'วันเกิด', gender: 'เพศ',
+      memberType: 'แพ็คเกจ', role: 'Role', membershipExpiry: 'วันหมดอายุ'
+    }
+
     for (const r of dataRows) {
       const uid = (r[col.uid] || '').trim()
       if (!uid) { failed++; continue }
@@ -2497,15 +2503,18 @@ const onImportFile = async (e) => {
       if (col.role > -1) fields.role = (r[col.role] || '').trim().toLowerCase() === 'admin' ? 'admin' : 'user'
       if (col.expiry > -1) { const ts = parseDateTs(r[col.expiry]); if (ts) fields.membershipExpiry = ts }
 
-      const label = fields.nickname || [fields.firstName, fields.lastName].filter(Boolean).join(' ') || uid
       const existing = existingMap.get(uid)
+      const pick = (key) => fields[key] !== undefined ? fields[key] : existing?.[key]
+      const nickname = pick('nickname') || existing?.displayName || uid
+      const fullName = [pick('firstName'), pick('lastName')].filter(Boolean).join(' ')
       try {
         if (!existing) {
           // เพิ่มใหม่
           await setDoc(doc(db, 'users', uid),
             { ...fields, lineUserId: uid, createdAt: new Date(), updatedAt: new Date(), profileCompleted: true },
             { merge: true })
-          created++; createdList.push(label)
+          created++
+          createdList.push({ nickname, fullName })
           existingMap.set(uid, { id: uid, ...fields })
         } else {
           // เขียนเฉพาะฟิลด์ที่เปลี่ยนจริง
@@ -2515,24 +2524,32 @@ const onImportFile = async (e) => {
           }
           if (Object.keys(changes).length === 0) { unchanged++; continue }
           await setDoc(doc(db, 'users', uid), { ...changes, updatedAt: new Date() }, { merge: true })
-          updated++; updatedList.push(label)
+          updated++
+          updatedList.push({ nickname, fullName, fields: Object.keys(changes).map(k => FIELD_LABELS[k] || k) })
         }
       } catch (err) { console.error('import row failed', uid, err); failed++ }
     }
     await loadAllData(true)
-    const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
-    const listHtml = (title, arr, color) => arr.length
+    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+    const nameHtml = (r) => `${esc(r.nickname)}${r.fullName ? ` <span class="text-gray-400">(${esc(r.fullName)})</span>` : ''}`
+    const createdHtml = createdList.length
       ? `<div class="mt-2">
-           <p class="font-semibold ${color}">${title} (${arr.length})</p>
-           <ul class="list-disc list-inside max-h-36 overflow-y-auto">${arr.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+           <p class="font-semibold text-emerald-600">เพิ่มใหม่ (${createdList.length})</p>
+           <ul class="list-disc list-inside max-h-32 overflow-y-auto">${createdList.map(r => `<li>${nameHtml(r)}</li>`).join('')}</ul>
+         </div>`
+      : ''
+    const updatedHtml = updatedList.length
+      ? `<div class="mt-2">
+           <p class="font-semibold text-blue-600">อัปเดต (${updatedList.length})</p>
+           <ul class="list-disc list-inside max-h-44 overflow-y-auto space-y-1">${updatedList.map(r => `<li>${nameHtml(r)}${r.fields.length ? `<br><span class="text-[11px] text-blue-500 ml-5">↳ ${esc(r.fields.join(', '))}</span>` : ''}</li>`).join('')}</ul>
          </div>`
       : ''
     Swal.fire({
       title: 'นำเข้าเสร็จสิ้น',
       html: `<div class="text-left text-sm">
         <p>เพิ่มใหม่ <strong>${created}</strong> · อัปเดต <strong>${updated}</strong> · ไม่เปลี่ยน <strong>${unchanged}</strong>${failed ? ` · <span class="text-red-500">ล้มเหลว ${failed}</span>` : ''}</p>
-        ${listHtml('เพิ่มใหม่', createdList, 'text-emerald-600')}
-        ${listHtml('อัปเดต', updatedList, 'text-blue-600')}
+        ${createdHtml}
+        ${updatedHtml}
       </div>`,
       icon: 'success', confirmButtonText: 'ตกลง'
     })

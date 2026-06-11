@@ -8,6 +8,7 @@
       </router-view>
     </div>
     <BottomNav />
+    <DevTools />
   </div>
 </template>
 
@@ -15,6 +16,7 @@
 import { onMounted } from 'vue'
 import { useLiffStore } from './stores/liff'
 import BottomNav from './components/BottomNav.vue'
+import DevTools from './components/DevTools.vue'
 
 const liffStore = useLiffStore()
 

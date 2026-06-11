@@ -21,6 +21,8 @@
   },
   "dependencies": {
     "firebase": "^12.12.1",
+    "marked": "^18.0.5",
+    "playwright": "^1.60.0",
     "vite": "^7.3.1"
   }
 }
