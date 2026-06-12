@@ -1,5 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
+import { getAuth, connectAuthEmulator } from 'firebase/auth'
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -12,7 +14,20 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig)
-export const db = getFirestore(app)
 
-// Remove auth dependency for now
-export const auth = null
+export const db = getFirestore(app)
+export const auth = getAuth(app)
+// region ต้องตรงกับที่ deploy ฟังก์ชัน (functions/index.js → us-central1)
+export const functions = getFunctions(app, 'us-central1')
+
+// โหมด DEV: ชี้ทุกอย่างไป Firebase Emulator (auth/functions/firestore)
+// ต้องรัน `firebase emulators:start` คู่กับ Vite — ดู npm run dev:full
+if (import.meta.env.DEV) {
+  try {
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+    connectFunctionsEmulator(functions, '127.0.0.1', 5001)
+    connectFirestoreEmulator(db, '127.0.0.1', 8080)
+  } catch (e) {
+    console.warn('[firebase] connect emulator failed:', e)
+  }
+}

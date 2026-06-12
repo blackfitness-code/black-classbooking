@@ -1,7 +1,14 @@
 import { defineStore } from 'pinia'
 import liff from '@line/liff'
+import { signInWithCustomToken, signOut } from 'firebase/auth'
+import { httpsCallable } from 'firebase/functions'
+import { auth, functions } from '../firebase'
 
 const DEV_MODE = import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_PROFILE === 'true'
+
+// promise cache ระดับ module — กัน ensureFirebaseAuth ถูกเรียกซ้ำพร้อมกันหลายจุด
+// (sign-in ครั้งเดียวพอ; ทุก caller รอ promise เดียวกัน)
+let firebaseAuthPromise = null
 
 const DEFAULT_MOCK_PROFILE = {
     userId: 'U1234567890abcdef1234567890abcdef',
@@ -43,10 +50,56 @@ export const useLiffStore = defineStore('liff', {
         profile: null,
         liffId: import.meta.env.VITE_LIFF_ID || '2007882550-gB0lXQvK',
         devMode: DEV_MODE,
-        initError: null
+        initError: null,
+        firebaseAuthReady: false
     }),
 
     actions: {
+        // แลก LINE identity เป็น Firebase Auth (custom token) แล้ว sign-in
+        // ต้อง await ตัวนี้ให้เสร็จ "ก่อน" อ่าน/เขียน Firestore ทุกจุด
+        // ไม่งั้น request.auth = null → rules ปฏิเสธทุกอย่าง (บั๊กรอบก่อน)
+        // idempotent: เรียกซ้ำได้ ทุก caller รอ promise เดียวกัน
+        async ensureFirebaseAuth() {
+            if (auth.currentUser) {
+                this.firebaseAuthReady = true
+                return auth.currentUser
+            }
+            if (firebaseAuthPromise) return firebaseAuthPromise
+
+            firebaseAuthPromise = (async () => {
+                const callLineLogin = httpsCallable(functions, 'lineLogin')
+
+                let payload
+                if (this.devMode) {
+                    // dev: ไม่มี ID token จริง → ใช้ devUid (mock uid = LINE userId)
+                    // ผ่าน dev-bypass ใน function ที่เปิดเฉพาะใน emulator เท่านั้น
+                    const uid = getMockProfile().userId
+                    payload = { devUid: uid }
+                } else {
+                    const idToken = liff.getIDToken()
+                    if (!idToken) {
+                        throw new Error('ไม่พบ LINE ID token (ต้องเปิด scope openid ที่ LINE channel)')
+                    }
+                    payload = { idToken }
+                }
+
+                const { data } = await callLineLogin(payload)
+                await signInWithCustomToken(auth, data.token)
+                this.firebaseAuthReady = true
+                return auth.currentUser
+            })()
+
+            try {
+                return await firebaseAuthPromise
+            } catch (error) {
+                // ล้าง cache เพื่อให้ลองใหม่ได้ครั้งหน้า
+                firebaseAuthPromise = null
+                this.firebaseAuthReady = false
+                console.error('ensureFirebaseAuth failed:', error)
+                throw error
+            }
+        },
+
         async initLiff() {
             if (this.devMode) {
                 const mock = getMockProfile()
@@ -55,6 +108,8 @@ export const useLiffStore = defineStore('liff', {
                 this.isInClient = false
                 this.profile = mock
                 localStorage.setItem('lineUserId', mock.userId)
+                // ต้องมี emulator รันอยู่ (npm run dev:full) — ถ้าไม่มีจะ throw แต่ไม่ทำให้แอปล่ม
+                try { await this.ensureFirebaseAuth() } catch { /* dev: emulator อาจไม่ได้รัน */ }
                 return
             }
 
@@ -68,6 +123,8 @@ export const useLiffStore = defineStore('liff', {
                     this.isLoggedIn = true
                     this.profile = await liff.getProfile()
                     localStorage.setItem('lineUserId', this.profile.userId)
+                    // sign-in Firebase ให้เสร็จก่อน view ใด ๆ จะอ่าน Firestore
+                    await this.ensureFirebaseAuth()
                 } else {
                     this.isLoggedIn = false
                     this.profile = null
@@ -87,6 +144,7 @@ export const useLiffStore = defineStore('liff', {
                 this.isLoggedIn = true
                 this.profile = mock
                 localStorage.setItem('lineUserId', mock.userId)
+                try { await this.ensureFirebaseAuth() } catch { /* dev: emulator อาจไม่ได้รัน */ }
                 return
             }
 
@@ -100,6 +158,11 @@ export const useLiffStore = defineStore('liff', {
         },
 
         async logout() {
+            // ล้าง Firebase Auth + cache เสมอ (ทั้ง dev/prod)
+            firebaseAuthPromise = null
+            this.firebaseAuthReady = false
+            try { await signOut(auth) } catch { /* ignore */ }
+
             if (this.devMode) {
                 this.isLoggedIn = false
                 this.profile = null

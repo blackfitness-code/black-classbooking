@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { db } from '../firebase'
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { useLiffStore } from './liff'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -23,6 +24,9 @@ export const useAuthStore = defineStore('auth', {
       this.userProfile = { lineUserId, displayName, pictureUrl }
 
       try {
+        // ต้อง sign-in Firebase ให้เสร็จก่อน ไม่งั้น getDoc โดน permission-denied
+        await useLiffStore().ensureFirebaseAuth()
+
         const userDoc = await getDoc(doc(db, 'users', lineUserId))
 
         if (!userDoc.exists()) {
@@ -89,6 +93,9 @@ export const useAuthStore = defineStore('auth', {
       const completeProfile = {
         ...this.userProfile,
         ...profileData,
+        // create rule บังคับ role === 'user' และ lineUserId === doc id
+        role: this.userProfile.role || 'user',
+        lineUserId: this.userProfile.lineUserId,
         profileCompleted: true,
         updatedAt: new Date()
       }
