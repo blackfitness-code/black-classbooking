@@ -149,6 +149,19 @@ export const useLiffStore = defineStore('liff', {
                 }
             }
             return null
+        },
+
+        /** คืน LINE ID Token สำหรับส่ง backend (Phase 1)
+         *  devMode → return null เพราะ backend จะใช้ devUid แทน
+         */
+        async getIdToken() {
+            if (this.devMode) return null
+            try {
+                if (!this.isLiffReady || !liff.isLoggedIn()) return null
+                return liff.getIDToken()
+            } catch {
+                return null
+            }
         }
     }
 })

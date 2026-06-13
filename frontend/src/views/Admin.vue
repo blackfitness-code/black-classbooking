@@ -1820,6 +1820,19 @@ const loadAllData = async (forceRefresh = false) => {
   }
 }
 
+// อัปเดต user คนเดียวใน state + cache ทันที (ไม่ต้อง refetch ทั้งก้อน)
+const patchUserLocal = (id, changes) => {
+  const i = users.value.findIndex(u => u.id === id)
+  if (i !== -1) {
+    users.value[i] = { ...users.value[i], ...changes }
+    setCachedData(CACHE_KEYS.ADMIN_USERS, users.value)
+  }
+}
+const removeUserLocal = (id) => {
+  users.value = users.value.filter(u => u.id !== id)
+  setCachedData(CACHE_KEYS.ADMIN_USERS, users.value)
+}
+
 const loadCustomClassTypes = async () => {
   try {
     const snap = await getDoc(doc(db, 'settings', 'classTypes'))
@@ -2213,7 +2226,7 @@ const setCooldown = async () => {
       updatedAt: new Date(),
     })
     showCooldownModal.value = false
-    await loadAllData(true)
+    patchUserLocal(cooldownTargetUser.value.id, { cooldownUntil: cooldownUntil, cooldownReason: cooldownReason.value.trim() || null, updatedAt: new Date() })
     Swal.fire({
       title: 'ตั้ง Cooldown สำเร็จ!',
       html: `<strong>${cooldownTargetUser.value.nickname || cooldownTargetUser.value.displayName || 'สมาชิก'}</strong><br>ถูกระงับการจอง <strong>${cooldownDays.value} วัน</strong><br>ถึง ${getCooldownPreviewDate(cooldownDays.value)}`,
@@ -2246,7 +2259,7 @@ const clearCooldown = async (user) => {
       cooldownReason: null,
       updatedAt: new Date(),
     })
-    await loadAllData(true)
+    patchUserLocal(user.id, { cooldownUntil: null, cooldownReason: null, updatedAt: new Date() })
     Swal.fire({ title: 'ยกเลิก Cooldown สำเร็จ!', icon: 'success', timer: 2000, showConfirmButton: false })
   } catch (err) {
     console.error(err)
@@ -2290,7 +2303,7 @@ const setMembershipExpiry = async (user) => {
   try {
     await updateDoc(doc(db, 'users', user.id), { membershipExpiry: Timestamp.fromDate(new Date(date)), updatedAt: new Date() })
     delete selectedDates.value[user.id]
-    await loadAllData(true)
+    patchUserLocal(user.id, { membershipExpiry: new Date(date), updatedAt: new Date() })
     Swal.fire({ title: 'สำเร็จ!', text: 'ตั้งวันหมดอายุสำเร็จ!', icon: 'success', confirmButtonText: 'ตกลง' })
   } catch (err) {
     console.error(err)
@@ -2311,10 +2324,10 @@ const updateMemberType = async (user, newType) => {
     confirmButtonText: 'ยืนยัน',
     cancelButtonText: 'ยกเลิก',
   })
-  if (!result.isConfirmed) { await loadAllData(); return }
+  if (!result.isConfirmed) { users.value = [...users.value]; return }
   try {
     await updateDoc(doc(db, 'users', user.id), { memberType: newType, updatedAt: new Date() })
-    await loadAllData()
+    patchUserLocal(user.id, { memberType: newType, updatedAt: new Date() })
     Swal.fire({ title: 'สำเร็จ!', text: `เปลี่ยนแพ็คเกจเป็น ${label(newType)} สำเร็จ!`, icon: 'success', confirmButtonText: 'ตกลง' })
   } catch (e) {
     console.error('update member type failed:', e)
@@ -2361,7 +2374,7 @@ const saveEditUser = async () => {
       updatedAt: new Date()
     })
     showEditUserModal.value = false
-    await loadAllData(true)
+    patchUserLocal(u.id, { nickname: (u.nickname || '').trim(), firstName: (u.firstName || '').trim(), lastName: (u.lastName || '').trim(), nationalId: (u.nationalId || '').trim(), phone: (u.phone || '').trim(), gender: u.gender || '', birthDate: u.birthDate || '', healthIssues: (u.healthIssues || '').trim(), updatedAt: new Date() })
     Swal.fire({ title: 'สำเร็จ!', text: 'บันทึกข้อมูลสมาชิกแล้ว', icon: 'success', confirmButtonText: 'ตกลง' })
   } catch (e) {
     console.error('save user failed:', e)
@@ -2386,7 +2399,7 @@ const deleteUser = async (user) => {
   try {
     await deleteDoc(doc(db, 'users', user.id))
     if (expandedUserId.value === user.id) expandedUserId.value = null
-    await loadAllData(true)
+    removeUserLocal(user.id)
     Swal.fire({ title: 'ลบแล้ว', icon: 'success', timer: 1200, showConfirmButton: false })
   } catch (e) {
     console.error('delete user failed:', e)
@@ -2611,10 +2624,10 @@ const updateUserRole = async (user, newRole) => {
     confirmButtonText: 'ยืนยัน',
     cancelButtonText: 'ยกเลิก',
   })
-  if (!result.isConfirmed) { await loadAllData(); return }
+  if (!result.isConfirmed) { users.value = [...users.value]; return }
   try {
     await updateDoc(doc(db, 'users', user.id), { role: newRole, updatedAt: new Date() })
-    await loadAllData()
+    patchUserLocal(user.id, { role: newRole, updatedAt: new Date() })
     Swal.fire({ title: 'สำเร็จ!', text: `เปลี่ยน Role เป็น ${newRole === 'admin' ? 'Admin' : 'User'} สำเร็จ!`, icon: 'success', confirmButtonText: 'ตกลง' })
   } catch (err) {
     console.error(err)

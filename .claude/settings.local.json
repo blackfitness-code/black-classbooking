@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(& \"C:/Users/Bossserx/AppData/Local/Programs/Python/Python313/python.exe\" -c \"from pythainlp.transliterate import romanize; print\\(romanize\\('???', engine='royin'\\)\\); print\\(romanize\\('????????', engine='royin'\\)\\)\")"
+      "PowerShell(& \"C:/Users/Bossserx/AppData/Local/Programs/Python/Python313/python.exe\" -c \"from pythainlp.transliterate import romanize; print\\(romanize\\('???', engine='royin'\\)\\); print\\(romanize\\('????????', engine='royin'\\)\\)\")",
+      "PowerShell(Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue; \"stopped pid $\\($_.OwningProcess\\)\" })",
+      "PowerShell(Stop-Process -Id 4504 -Force)"
     ]
   }
 }

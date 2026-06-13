@@ -1,6 +1,8 @@
 {
   "projects": {
-    "default": "blackyoga-2748c"
+    "default": "blackyoga-2748c",
+    "prod": "blackyoga-2748c",
+    "dev": "blackcrmdev"
   },
   "targets": {},
   "etags": {}
