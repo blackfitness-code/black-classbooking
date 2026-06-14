@@ -18,6 +18,10 @@ frontend/.env.production
 backend/.env
 backend/.env.development
 backend/.env.production
+# dashboard (desktop admin web)
+dashboard/.env
+dashboard/.env.development
+dashboard/.env.production
 # but never ignore the committed templates
 !**/*.example
 
