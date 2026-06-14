@@ -20,29 +20,29 @@
       <!-- Skeleton while loading (matches member card + menu) -->
       <div v-if="isLoading" class="animate-fade-in">
         <!-- member card skeleton -->
-        <div class="relative overflow-hidden rounded-3xl shadow-2xl aspect-[1.586/1] mb-6 p-6 flex flex-col justify-between bg-[linear-gradient(135deg,#2b2f36_0%,#15171b_45%,#000000_100%)]">
+        <div class="relative overflow-hidden rounded-3xl aspect-[1.586/1] mb-6 p-6 flex flex-col justify-between bg-gray-100 border border-gray-200">
           <div class="flex items-start justify-between">
-            <div class="w-14 h-14 rounded-2xl bg-white/10 animate-pulse"></div>
-            <div class="w-24 h-7 rounded-full bg-white/10 animate-pulse"></div>
+            <div class="w-14 h-14 rounded-2xl bg-gray-200 animate-pulse"></div>
+            <div class="w-24 h-7 rounded-full bg-gray-200 animate-pulse"></div>
           </div>
           <div class="space-y-2">
-            <div class="h-6 w-1/2 bg-white/10 rounded-lg animate-pulse"></div>
-            <div class="h-3 w-1/3 bg-white/10 rounded animate-pulse"></div>
+            <div class="h-6 w-1/2 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div class="h-3 w-1/3 bg-gray-200 rounded animate-pulse"></div>
           </div>
           <div class="flex items-end justify-between">
-            <div class="h-7 w-20 bg-white/10 rounded animate-pulse"></div>
-            <div class="h-7 w-24 bg-white/10 rounded animate-pulse"></div>
+            <div class="h-7 w-20 bg-gray-200 rounded animate-pulse"></div>
+            <div class="h-7 w-24 bg-gray-200 rounded animate-pulse"></div>
           </div>
         </div>
 
         <!-- upcoming class skeleton -->
-        <div class="rounded-3xl bg-[linear-gradient(135deg,#2b2f36_0%,#15171b_45%,#000000_100%)] p-3 flex items-center gap-4 mb-8">
-          <div class="w-12 h-16 rounded-xl bg-white/10 shrink-0 animate-pulse"></div>
+        <div class="rounded-3xl bg-gray-100 border border-gray-200 p-3 flex items-center gap-4 mb-8">
+          <div class="w-12 h-16 rounded-xl bg-gray-200 shrink-0 animate-pulse"></div>
           <div class="flex-1 space-y-2">
-            <div class="h-4 w-3/4 bg-white/10 rounded animate-pulse"></div>
-            <div class="h-3 w-1/3 bg-white/10 rounded animate-pulse"></div>
+            <div class="h-4 w-3/4 bg-gray-200 rounded animate-pulse"></div>
+            <div class="h-3 w-1/3 bg-gray-200 rounded animate-pulse"></div>
           </div>
-          <div class="w-20 h-12 rounded-2xl bg-white/10 shrink-0 animate-pulse"></div>
+          <div class="w-20 h-12 rounded-2xl bg-gray-200 shrink-0 animate-pulse"></div>
         </div>
 
         <!-- menu skeleton -->

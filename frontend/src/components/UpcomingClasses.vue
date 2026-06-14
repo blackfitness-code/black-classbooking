@@ -8,13 +8,13 @@
 
     <!-- Skeleton -->
     <div v-if="loading" class="space-y-3">
-      <div v-for="i in 2" :key="i" class="rounded-3xl bg-[linear-gradient(135deg,#2b2f36_0%,#15171b_45%,#000000_100%)] p-3 flex items-center gap-4">
-        <div class="w-12 h-16 rounded-xl bg-white/10 shrink-0 animate-pulse"></div>
+      <div v-for="i in 2" :key="i" class="rounded-3xl bg-gray-100 border border-gray-200 p-3 flex items-center gap-4">
+        <div class="w-12 h-16 rounded-xl bg-gray-200 shrink-0 animate-pulse"></div>
         <div class="flex-1 space-y-2">
-          <div class="h-4 w-3/4 bg-white/10 rounded animate-pulse"></div>
-          <div class="h-3 w-1/3 bg-white/10 rounded animate-pulse"></div>
+          <div class="h-4 w-3/4 bg-gray-200 rounded animate-pulse"></div>
+          <div class="h-3 w-1/3 bg-gray-200 rounded animate-pulse"></div>
         </div>
-        <div class="w-20 h-12 rounded-2xl bg-white/10 shrink-0 animate-pulse"></div>
+        <div class="w-20 h-12 rounded-2xl bg-gray-200 shrink-0 animate-pulse"></div>
       </div>
     </div>
 

@@ -118,13 +118,8 @@
       padding-bottom: 5.5rem;
     }
 
-    .bottom-nav {
-      max-width: 36rem;
-      left: 50%;
-      transform: translateX(-50%);
-      border-radius: 1rem 1rem 0 0;
-      box-shadow: 0 -4px 24px rgba(15, 23, 42, 0.06);
-    }
+    /* การ center + bg + rounded ของแถบ nav จัดการที่ div ใน BottomNav.vue
+       (max-w-md mx-auto) แล้ว — center ทุกขนาดจอ ไม่ต้อง override ตรงนี้ */
   }
 }
 
