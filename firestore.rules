@@ -1,30 +1,21 @@
 rules_version = '2';
+
+// ============================================================================
+// DENY-ALL — ลูกค้า (client / browser) เข้าถึง Firestore ตรงไม่ได้เลย
+//
+// สถาปัตยกรรมใหม่: frontend → backend (Express + Firebase Admin SDK) → Firestore
+// ทุก read/write ผ่าน backend ที่ถือ service account เท่านั้น.
+// Admin SDK ทำงานด้วย privileged credential ซึ่ง "ข้าม" security rules เหล่านี้
+// rules จึงปฏิเสธทุกอย่างจากฝั่ง client ได้อย่างปลอดภัย (auth/role/business logic
+// บังคับที่ backend แล้ว).
+//
+// deploy ขึ้นทั้ง prod (blackyoga-2748c) และ dev (blackcrmdev) — ผู้ใช้เลือกให้
+// dev mirror prod (รับทราบว่าจะกระทบแอป CRM ที่แชร์ blackcrmdev ถ้ามันเข้า Firestore ตรง).
+// ============================================================================
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users collection - users can read/write their own data
-    match /users/{userId} {
-      allow read, write: if true; // Allow all for now, implement auth later
-    }
-
-    // Classes collection - readable by all, writable by admin
-    match /classes/{classId} {
-      allow read: if true;
-      allow write: if true; // Allow all for now, implement admin check later
-    }
-
-    // Bookings collection - users can read/write their own bookings
-    match /bookings/{bookingId} {
-      allow read, write: if true; // Allow all for now, implement user check later
-    }
-
-    // Check-ins collection - QR check-in records
-    match /checkins/{checkinId} {
-      allow read, write: if true; // Allow all for now, implement staff check later
-    }
-
-    // Settings collection - admin config (class types, etc.)
-    match /settings/{document} {
-      allow read, write: if true; // Allow all for now, implement admin check later
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

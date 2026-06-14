@@ -18,7 +18,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'firebase': ['firebase/app', 'firebase/firestore'],
           'liff': ['@line/liff'],
           'vendor': ['vue', 'vue-router', 'pinia'],
           'swal': ['sweetalert2'],
