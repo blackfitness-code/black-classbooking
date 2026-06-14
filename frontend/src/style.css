@@ -86,25 +86,44 @@
       @apply px-4 py-2.5 text-sm;
     }
 
-    #app > div:first-child {
+    #app .app-content-spacing {
       padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 1rem)) !important;
     }
   }
 
   @media (max-height: 600px) {
-    #app > div:first-child {
+    #app .app-content-spacing {
       padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0.5rem)) !important;
     }
   }
 
   @media (max-width: 375px) {
-    #app > div:first-child {
+    #app .app-content-spacing {
       padding-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0.75rem)) !important;
     }
 
     .bottom-nav {
       height: calc(3.75rem + env(safe-area-inset-bottom, 0));
       min-height: 3.75rem;
+    }
+  }
+
+  /* Desktop — centered app column, less bottom padding when nav is compact */
+  @media (min-width: 1024px) {
+    .app-shell {
+      min-height: 100vh;
+    }
+
+    .app-content-spacing {
+      padding-bottom: 5.5rem;
+    }
+
+    .bottom-nav {
+      max-width: 36rem;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 1rem 1rem 0 0;
+      box-shadow: 0 -4px 24px rgba(15, 23, 42, 0.06);
     }
   }
 }

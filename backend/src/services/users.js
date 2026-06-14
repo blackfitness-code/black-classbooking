@@ -21,7 +21,7 @@ const { FieldValue } = admin.firestore;
 export function serializeUser(user) {
   if (!user) return null;
 
-  const TIMESTAMP_FIELDS = ['membershipExpiry', 'cooldownUntil', 'createdAt', 'updatedAt'];
+  const TIMESTAMP_FIELDS = ['membershipExpiry', 'cooldownUntil', 'createdAt', 'updatedAt', 'profileCompletedAt'];
   const out = { ...user };
 
   for (const field of TIMESTAMP_FIELDS) {
@@ -136,15 +136,19 @@ export async function updateProfile(lineUserId, profileData) {
     }
   }
 
-  safeData.profileCompleted = true;
-  safeData.updatedAt = FieldValue.serverTimestamp();
-
   const docRef = db.collection('users').doc(lineUserId);
 
   // ตรวจสอบว่า user มีอยู่จริง
   const snap = await docRef.get();
   if (!snap.exists) {
     throw new ApiError(404, 'User not found', 'USER_NOT_FOUND');
+  }
+
+  const wasCompleted = snap.data().profileCompleted === true;
+  safeData.profileCompleted = true;
+  safeData.updatedAt = FieldValue.serverTimestamp();
+  if (!wasCompleted) {
+    safeData.profileCompletedAt = FieldValue.serverTimestamp();
   }
 
   await docRef.update(safeData);

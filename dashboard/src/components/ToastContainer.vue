@@ -1,19 +1,19 @@
 <template>
-  <div class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+  <div class="fixed top-4 right-4 z-toast flex flex-col gap-2 pointer-events-none max-w-sm">
     <transition-group name="toast">
       <div
         v-for="t in toasts"
         :key="t.id"
-        class="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium max-w-sm"
-        :class="t.type === 'error'
-          ? 'bg-red-600 text-white'
-          : t.type === 'warning'
-          ? 'bg-yellow-500 text-white'
-          : 'bg-gray-900 text-white'"
+        role="status"
+        class="pointer-events-auto flex items-start gap-2.5 px-4 py-3 rounded-lg shadow-dropdown text-sm font-medium border"
+        :class="toastClass(t.type)"
       >
-        <span v-if="t.type === 'success'">✓</span>
-        <span v-else-if="t.type === 'error'">✕</span>
-        <span v-else-if="t.type === 'warning'">⚠</span>
+        <svg v-if="t.type === 'success'" class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        <svg v-else-if="t.type === 'error'" class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
         <span>{{ t.message }}</span>
       </div>
     </transition-group>
@@ -26,8 +26,13 @@ import { ref } from 'vue'
 const toasts = ref([])
 let nextId = 0
 
-/** แสดง toast — เรียกจากภายนอกผ่าน expose */
-function show(message, type = 'success', duration = 3000) {
+function toastClass(type) {
+  if (type === 'error') return 'bg-red-50 text-red-900 border-red-200'
+  if (type === 'warning') return 'bg-amber-50 text-amber-900 border-amber-200'
+  return 'bg-surface-raised text-ink border-line shadow-panel'
+}
+
+function show(message, type = 'success', duration = 3200) {
   const id = ++nextId
   toasts.value.push({ id, message, type })
   setTimeout(() => {

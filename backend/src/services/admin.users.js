@@ -230,6 +230,7 @@ export async function importUsers(records) {
           ...fields,
           lineUserId: uid,
           profileCompleted: true,
+          profileCompletedAt: FieldValue.serverTimestamp(),
           createdAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         },

@@ -1,136 +1,176 @@
 <template>
-  <!-- Toast layer -->
   <ToastContainer ref="toast" />
 
-  <!-- ─── LOGIN SCREEN ──────────────────────────────────────────────── -->
-  <div
-    v-if="!isLoggedIn"
-    class="min-h-screen bg-gray-50 flex items-center justify-center p-4"
-  >
-    <div class="bg-white rounded-2xl shadow-soft border border-gray-100 w-full max-w-sm p-8">
-      <!-- Logo / title -->
-      <div class="mb-8 text-center">
-        <div class="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-          </svg>
-        </div>
-        <h1 class="text-xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p class="text-sm text-gray-500 mt-1">Blackfitness Booking System</p>
+  <!-- Login -->
+  <div v-if="!isLoggedIn" class="min-h-screen bg-shell flex">
+    <div class="hidden lg:flex lg:w-[42%] bg-ink text-white flex-col justify-between p-10">
+      <div>
+        <p class="text-sm font-semibold text-white/70">Blackfitness</p>
+        <h1 class="text-[2rem] font-bold leading-tight mt-6 text-balance" style="letter-spacing: -0.02em">
+          จัดการสมาชิก<br />จากที่เดียว
+        </h1>
+        <p class="text-white/70 mt-4 max-w-sm leading-relaxed">
+          รับแจ้งเตือนเมื่อมีคนกรอกโปรไฟล์ครบ ปรับแพ็คเกจและข้อมูลได้ทันที
+        </p>
       </div>
+      <p class="text-2xs text-white/40">Staff & Admin Dashboard</p>
+    </div>
 
-      <!-- Form -->
-      <form @submit.prevent="handleLogin" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">LINE User ID</label>
-          <input
-            v-model="loginUid"
-            type="text"
-            class="input-field"
-            placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-            autocomplete="off"
-            spellcheck="false"
-          />
+    <div class="flex-1 flex items-center justify-center p-6">
+      <div class="w-full max-w-md">
+        <div class="lg:hidden mb-8">
+          <p class="text-2xs font-semibold text-ink-muted">Blackfitness</p>
+          <h1 class="text-2xl font-bold text-ink mt-1">Admin Dashboard</h1>
         </div>
 
-        <p v-if="loginError" class="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{{ loginError }}</p>
+        <div class="panel p-8">
+          <h2 class="text-lg font-semibold text-ink">เข้าสู่ระบบ</h2>
+          <p class="text-sm text-ink-muted mt-1">ใช้ LINE User ID ของ staff/admin</p>
 
-        <button
-          type="submit"
-          class="btn-primary w-full justify-center py-3 text-base"
-          :disabled="loginLoading"
-        >
-          {{ loginLoading ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ' }}
-        </button>
-      </form>
+          <form @submit.prevent="handleLogin" class="mt-6 space-y-4">
+            <div>
+              <label for="login-uid" class="block text-sm font-medium text-ink-secondary mb-1.5">LINE User ID</label>
+              <input
+                id="login-uid"
+                v-model="loginUid"
+                type="text"
+                class="input-field font-mono text-xs"
+                placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
 
-      <p class="text-xs text-center text-gray-400 mt-6">
-        Dev mode — ใช้ LINE UID ตรง ๆ (backend NODE_ENV=development)
-      </p>
+            <p v-if="loginError" class="text-sm text-danger bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              {{ loginError }}
+            </p>
+
+            <button type="submit" class="btn-primary w-full py-2.5" :disabled="loginLoading">
+              {{ loginLoading ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ' }}
+            </button>
+          </form>
+
+          <p class="text-2xs text-center text-ink-muted mt-5">
+            Dev mode — backend NODE_ENV=development
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- ─── MAIN DASHBOARD ───────────────────────────────────────────── -->
-  <div v-else class="min-h-screen bg-gray-50 flex flex-col">
-
-    <!-- Top bar -->
-    <header class="bg-white border-b border-gray-100 sticky top-0 z-20 shadow-sm">
-      <div class="max-w-[1600px] mx-auto px-6 h-14 flex items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+  <!-- Dashboard shell -->
+  <div v-else class="min-h-screen bg-shell flex flex-col">
+    <header class="sticky top-0 z-sticky bg-surface-raised border-b border-line">
+      <div class="max-w-[1680px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-primary-muted flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
           </div>
-          <span class="font-semibold text-gray-900">Blackfitness Admin</span>
-          <span class="hidden sm:inline text-gray-300">|</span>
-          <span class="hidden sm:inline text-xs text-gray-500">{{ currentUserDisplay }}</span>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-ink leading-none truncate">สมาชิก</p>
+            <p class="text-2xs text-ink-muted truncate hidden sm:block">{{ currentUserDisplay }}</p>
+          </div>
         </div>
 
-        <div class="flex items-center gap-3">
-          <!-- Role badge -->
+        <div class="flex items-center gap-2 sm:gap-3">
           <span :class="roleBadgeClass">{{ roleLabel }}</span>
 
-          <!-- Poll status indicator -->
-          <span class="flex items-center gap-1 text-xs text-gray-400">
-            <span class="w-1.5 h-1.5 rounded-full" :class="pollError ? 'bg-red-400' : 'bg-green-400'"></span>
-            {{ pollError ? 'ไม่สามารถโหลดข้อมูล' : `${users.length} สมาชิก` }}
+          <span v-if="!pollError" class="badge-live hidden md:inline-flex">
+            <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+            Live
           </span>
 
-          <!-- Logout -->
-          <button @click="handleLogout" class="btn-secondary text-xs py-1.5 px-3">
+          <NotificationBell
+            :items="notificationItems"
+            :unread-count="unreadCount"
+            :loading="usersLoading"
+            :ring="bellRing"
+            :is-admin="isAdmin"
+            @select="onNotificationSelect"
+            @mark-all-read="markAllRead"
+          />
+
+          <button @click="handleLogout" class="btn-secondary text-xs py-1.5 px-3 hidden sm:inline-flex">
             ออกจากระบบ
+          </button>
+          <button @click="handleLogout" class="btn-ghost sm:hidden" aria-label="ออกจากระบบ">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
           </button>
         </div>
       </div>
     </header>
 
-    <!-- Content area: two-column desktop layout -->
-    <main class="flex-1 max-w-[1600px] mx-auto w-full px-6 py-5 flex gap-5 min-h-0" style="height: calc(100vh - 3.5rem);">
-
-      <!-- Left: Incoming panel (fixed width) -->
-      <div class="w-72 xl:w-80 shrink-0 flex flex-col">
-        <IncomingPanel :incoming-list="incomingList" :loading="usersLoading" />
+    <!-- Stats strip -->
+    <div class="border-b border-line bg-surface-raised">
+      <div class="max-w-[1680px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center gap-2 sm:gap-3">
+        <div class="stat-chip">
+          <span class="text-ink-muted text-2xs">สมาชิกทั้งหมด</span>
+          <span class="font-semibold text-ink tabular-nums">{{ users.length }}</span>
+        </div>
+        <div class="stat-chip">
+          <span class="text-ink-muted text-2xs">กรอกโปรไฟล์ครบ</span>
+          <span class="font-semibold text-ink tabular-nums">{{ completedCount }}</span>
+        </div>
+        <div
+          class="stat-chip"
+          :class="unreadCount > 0 ? 'border-primary-border bg-primary-muted' : ''"
+        >
+          <span class="text-ink-muted text-2xs">รอตรวจ</span>
+          <span class="font-semibold tabular-nums" :class="unreadCount > 0 ? 'text-primary' : 'text-ink'">
+            {{ unreadCount }}
+          </span>
+        </div>
+        <p v-if="pollError" class="text-2xs text-danger ml-auto">โหลดข้อมูลไม่สำเร็จ — จะลองใหม่ใน 5 วินาที</p>
       </div>
+    </div>
 
-      <!-- Right: Members table (fills rest) -->
-      <div class="flex-1 min-w-0 flex flex-col">
-        <MembersTable
-          :users="users"
-          :loading="usersLoading"
-          :is-admin="isAdmin"
-          @update-user="onUserUpdated"
-          @edit-profile="openEditModal"
-          @toast="showToast"
-        />
-      </div>
+    <main class="flex-1 max-w-[1680px] mx-auto w-full px-4 sm:px-6 py-4 sm:py-5 min-h-0 flex flex-col" style="height: calc(100vh - var(--header-h) - 3.25rem);">
+      <MembersTable
+        :users="users"
+        :loading="usersLoading"
+        :is-admin="isAdmin"
+        :highlight-id="highlightUserId"
+        @update-user="onUserUpdated"
+        @edit-profile="openEditModal"
+        @view-profile="openProfileDetail"
+        @toast="showToast"
+      />
     </main>
   </div>
 
-  <!-- Edit profile modal -->
   <EditProfileModal
     :visible="editModalVisible"
     :user="editingUser"
     @close="editModalVisible = false"
     @saved="onProfileSaved"
   />
+
+  <ProfileDetailModal
+    :visible="profileDetailVisible"
+    :user="detailUser"
+    @close="profileDetailVisible = false"
+    @toast="showToast"
+  />
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import ToastContainer from './components/ToastContainer.vue'
-import IncomingPanel from './components/IncomingPanel.vue'
+import NotificationBell from './components/NotificationBell.vue'
 import MembersTable from './components/MembersTable.vue'
 import EditProfileModal from './components/EditProfileModal.vue'
+import ProfileDetailModal from './components/ProfileDetailModal.vue'
 import { login, logout, tryRestoreSession, isLoggedIn, user, role, isAdmin } from './lib/auth.js'
+import { displayName, completionTime } from './lib/profileFields.js'
 import api from './lib/api.js'
-
-// ─── Auth ───────────────────────────────────────────────────────────────────
 
 const loginUid = ref(import.meta.env.VITE_DEFAULT_ADMIN_UID ?? '')
 const loginLoading = ref(false)
 const loginError = ref(null)
-const sessionChecking = ref(true)
 
 const currentUserDisplay = computed(() => {
   const u = user.value
@@ -151,11 +191,8 @@ async function handleLogin() {
   loginLoading.value = true
   loginError.value = null
   const { ok, error } = await login(loginUid.value.trim())
-  if (!ok) {
-    loginError.value = error
-  } else {
-    startPolling()
-  }
+  if (!ok) loginError.value = error
+  else startPolling()
   loginLoading.value = false
 }
 
@@ -164,27 +201,66 @@ function handleLogout() {
   logout()
 }
 
-// ─── Users / polling ────────────────────────────────────────────────────────
-
-const users = ref([])           // full sorted list (by createdAt desc)
-const incomingList = ref([])    // "new arrivals" feed (prepended)
+const users = ref([])
 const usersLoading = ref(false)
 const pollError = ref(false)
+const bellRing = ref(false)
+const highlightUserId = ref(null)
+const notifications = ref([])
+const unreadIds = ref(new Set())
 
-// Track known IDs to detect new arrivals after the first load
-const knownIds = new Set()
+const unreadCount = computed(() => unreadIds.value.size)
+const completedCount = computed(() => users.value.filter(u => u.profileCompleted).length)
+
+const notificationItems = computed(() =>
+  [...notifications.value].sort((a, b) => {
+    if (a.unread !== b.unread) return a.unread ? -1 : 1
+    const ta = completionTime(a.user) ? new Date(completionTime(a.user)).getTime() : 0
+    const tb = completionTime(b.user) ? new Date(completionTime(b.user)).getTime() : 0
+    return tb - ta
+  })
+)
+
+const knownCompletedIds = new Set()
 let isFirstLoad = true
 let pollTimer = null
+let bellRingTimer = null
 
-// IDs that should flash (cleared after animation duration)
-const flashingIds = new Set()
+function getCompletedUsers(fetched) {
+  return fetched
+    .filter(u => u.profileCompleted)
+    .sort((a, b) => {
+      const ta = completionTime(a) ? new Date(completionTime(a)).getTime() : 0
+      const tb = completionTime(b) ? new Date(completionTime(b)).getTime() : 0
+      return tb - ta
+    })
+}
+
+function triggerBellRing() {
+  bellRing.value = true
+  if (bellRingTimer) clearTimeout(bellRingTimer)
+  bellRingTimer = setTimeout(() => { bellRing.value = false }, 1800)
+}
+
+function addNotification(user, unread = true) {
+  const existing = notifications.value.find(n => n.id === user.id)
+  if (existing) {
+    existing.user = user
+    if (unread) existing.unread = true
+  } else {
+    notifications.value.unshift({ id: user.id, user, unread })
+  }
+  if (unread) unreadIds.value = new Set([...unreadIds.value, user.id])
+  if (notifications.value.length > 30) {
+    notifications.value = notifications.value.slice(0, 30)
+  }
+}
 
 async function fetchUsers() {
   try {
     const data = await api.get('/admin/users')
     const fetched = data.users ?? []
-
-    // Sort by createdAt desc (newest first) for main table
+    const completed = getCompletedUsers(fetched)
     const sorted = [...fetched].sort((a, b) => {
       const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
       const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
@@ -192,37 +268,24 @@ async function fetchUsers() {
     })
 
     if (isFirstLoad) {
-      // Populate known IDs without triggering "new" highlight
-      for (const u of fetched) knownIds.add(u.id)
-      users.value = sorted.map(u => ({ ...u, _isNew: false }))
-      // Init incoming list = top 20 by createdAt desc
-      incomingList.value = sorted.slice(0, 20).map(u => ({ ...u, _isNew: false }))
+      for (const u of completed) knownCompletedIds.add(u.id)
+      users.value = sorted
+      notifications.value = completed.slice(0, 20).map(u => ({ id: u.id, user: u, unread: false }))
       isFirstLoad = false
     } else {
-      // Detect new IDs
-      const newUsers = fetched.filter(u => !knownIds.has(u.id))
-
-      for (const u of newUsers) {
-        knownIds.add(u.id)
-        flashingIds.add(u.id)
-        // Prepend to incoming list (newest at top)
-        incomingList.value.unshift({ ...u, _isNew: true })
-        // Remove flash class after animation finishes (2s)
-        setTimeout(() => {
-          flashingIds.delete(u.id)
-          // update _isNew flag in both lists
-          users.value = users.value.map(r => r.id === u.id ? { ...r, _isNew: false } : r)
-          incomingList.value = incomingList.value.map(r => r.id === u.id ? { ...r, _isNew: false } : r)
-        }, 2500)
+      for (const u of completed.filter(u => !knownCompletedIds.has(u.id))) {
+        knownCompletedIds.add(u.id)
+        addNotification(u, true)
+        triggerBellRing()
+        toast.value?.show(`สมาชิกใหม่: ${displayName(u)}`, 'success')
       }
-
-      // Update full table — merge in new data, keep _isNew state
-      users.value = sorted.map(u => {
-        const isNew = flashingIds.has(u.id)
-        return { ...u, _isNew: isNew }
+      users.value = sorted
+      const completedMap = new Map(completed.map(u => [u.id, u]))
+      notifications.value = notifications.value.map(n => {
+        const latest = completedMap.get(n.id)
+        return latest ? { ...n, user: latest } : n
       })
     }
-
     pollError.value = false
   } catch {
     pollError.value = true
@@ -234,70 +297,85 @@ async function fetchUsers() {
 function startPolling() {
   usersLoading.value = true
   isFirstLoad = true
-  knownIds.clear()
+  knownCompletedIds.clear()
+  notifications.value = []
+  unreadIds.value = new Set()
   fetchUsers()
   pollTimer = setInterval(fetchUsers, 5000)
 }
 
 function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
-  }
+  if (pollTimer) clearInterval(pollTimer)
+  pollTimer = null
   users.value = []
-  incomingList.value = []
-  knownIds.clear()
+  notifications.value = []
+  knownCompletedIds.clear()
+  unreadIds.value = new Set()
   isFirstLoad = true
   pollError.value = false
+  highlightUserId.value = null
 }
 
-// ─── User update handlers ────────────────────────────────────────────────────
+function markAsRead(userId) {
+  const next = new Set(unreadIds.value)
+  next.delete(userId)
+  unreadIds.value = next
+  const n = notifications.value.find(x => x.id === userId)
+  if (n) n.unread = false
+}
+
+function markAllRead() {
+  unreadIds.value = new Set()
+  notifications.value = notifications.value.map(n => ({ ...n, unread: false }))
+}
+
+function onNotificationSelect(u) {
+  markAsRead(u.id)
+  highlightUserId.value = u.id
+  setTimeout(() => { highlightUserId.value = null }, 3000)
+  if (isAdmin.value) openEditModal(u)
+  else openProfileDetail(u)
+}
 
 function onUserUpdated(updatedUser) {
-  // Update in-place in both lists
-  users.value = users.value.map(u =>
-    u.id === updatedUser.id ? { ...updatedUser, _isNew: u._isNew } : u
+  users.value = users.value.map(u => u.id === updatedUser.id ? updatedUser : u)
+  notifications.value = notifications.value.map(n =>
+    n.id === updatedUser.id ? { ...n, user: updatedUser } : n
   )
-  incomingList.value = incomingList.value.map(u =>
-    u.id === updatedUser.id ? { ...updatedUser, _isNew: u._isNew } : u
-  )
+  if (detailUser.value?.id === updatedUser.id) detailUser.value = updatedUser
 }
 
-// ─── Toast ───────────────────────────────────────────────────────────────────
-
 const toast = ref(null)
-
 function showToast({ message, type = 'success' }) {
   toast.value?.show(message, type)
 }
 
-// ─── Edit profile modal ──────────────────────────────────────────────────────
-
 const editModalVisible = ref(false)
 const editingUser = ref(null)
-
 function openEditModal(u) {
   editingUser.value = u
   editModalVisible.value = true
 }
-
 function onProfileSaved(updatedUser) {
   editModalVisible.value = false
+  markAsRead(updatedUser.id)
   onUserUpdated(updatedUser)
   toast.value?.show('บันทึกข้อมูลสำเร็จ', 'success')
 }
 
-// ─── App lifecycle ───────────────────────────────────────────────────────────
+const profileDetailVisible = ref(false)
+const detailUser = ref(null)
+function openProfileDetail(u) {
+  detailUser.value = u
+  profileDetailVisible.value = true
+}
 
 onMounted(async () => {
-  const restored = await tryRestoreSession()
-  if (restored) {
-    startPolling()
-  }
-  sessionChecking.value = false
+  if (await tryRestoreSession()) startPolling()
 })
 
 onUnmounted(() => {
   stopPolling()
+  if (bellRingTimer) clearTimeout(bellRingTimer)
 })
 </script>

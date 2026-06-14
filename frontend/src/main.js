@@ -1,22 +1,19 @@
 import liff from '@line/liff'
 
-// DEV_MODE ต้องตรงกับ stores/liff.js — ตอน dev/mock ข้ามการเช็ก LIFF
+// dev / mock — ข้ามการเช็ก LIFF client
 const DEV_MODE = import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_PROFILE === 'true'
 const LIFF_ID = import.meta.env.VITE_LIFF_ID || '2007882550-gB0lXQvK'
 
-// แสดงหน้า 404 เปล่า ๆ แล้วจบ — ไม่โหลด Vue / ไม่ดึงข้อมูลใด ๆ
-// debug = ข้อความ diagnostic ชั่วคราว (ลบออกภายหลัง)
-function render404(debug) {
-    document.title = '404 Not Found'
+function renderBootError(message, debug) {
+    document.title = 'Blackfitness — ไม่สามารถเปิดแอปได้'
     document.body.innerHTML =
-        '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;color:#374151;flex-direction:column;gap:.5rem;padding:1rem;text-align:center">' +
-        '<h1 style="font-size:3rem;margin:0">404</h1>' +
-        '<p style="margin:0;color:#6b7280">Not Found</p>' +
-        (debug ? '<pre style="margin:1rem 0 0;font-size:11px;color:#9ca3af;white-space:pre-wrap;word-break:break-all">' + debug + '</pre>' : '') +
+        '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;color:#374151;flex-direction:column;gap:.75rem;padding:1.5rem;text-align:center;max-width:28rem;margin:0 auto">' +
+        '<h1 style="font-size:1.25rem;margin:0;font-weight:600">ไม่สามารถเชื่อมต่อ LINE ได้</h1>' +
+        '<p style="margin:0;color:#6b7280;font-size:0.875rem;line-height:1.5">' + message + '</p>' +
+        (debug ? '<pre style="margin:0.5rem 0 0;font-size:11px;color:#9ca3af;white-space:pre-wrap;word-break:break-all;text-align:left;width:100%">' + debug + '</pre>' : '') +
         '</div>'
 }
 
-// โหลดแอปจริงเฉพาะตอนถูกเรียกผ่าน LINE LIFF เท่านั้น
 async function bootstrap() {
     const { createApp } = await import('vue')
     const { createPinia } = await import('pinia')
@@ -31,7 +28,6 @@ async function bootstrap() {
 }
 
 async function main() {
-    // dev / mock — ข้ามการเช็ก ให้รันได้ปกติ
     if (DEV_MODE) {
         await bootstrap()
         return
@@ -40,25 +36,15 @@ async function main() {
     try {
         await liff.init({ liffId: LIFF_ID })
     } catch (error) {
-        // init ไม่ผ่าน = เข้าไม่ได้ผ่าน LIFF → 404
-        render404('init failed: ' + (error && error.message ? error.message : String(error)) + '\nliffId=' + LIFF_ID)
-        return
-    }
-
-    // ต้องเปิดจากภายในแอป LINE (LIFF) เท่านั้น ไม่งั้น 404
-    if (!liff.isInClient()) {
-        let ctx = null
-        try { ctx = liff.getContext() } catch { /* ignore */ }
-        render404(
-            'not in client\n' +
-            'isInClient=' + liff.isInClient() + '\n' +
-            'isLoggedIn=' + liff.isLoggedIn() + '\n' +
-            'context.type=' + (ctx && ctx.type) + '\n' +
-            'url=' + window.location.href
+        renderBootError(
+            'กรุณาเปิดผ่านลิงก์ LIFF ที่ถูกต้อง หรือตรวจสอบ VITE_LIFF_ID',
+            (error && error.message ? error.message : String(error)) + '\nliffId=' + LIFF_ID
         )
         return
     }
 
+    // รองรับทั้ง LINE in-app และ external browser (Desktop / Mobile browser)
+    // ผู้ใช้ Desktop กด Login แล้ว redirect ไป LINE OAuth ได้
     await bootstrap()
 }
 

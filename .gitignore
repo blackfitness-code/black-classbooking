@@ -22,6 +22,7 @@ backend/.env.production
 dashboard/.env
 dashboard/.env.development
 dashboard/.env.production
+.cursor/
 # but never ignore the committed templates
 !**/*.example
 
