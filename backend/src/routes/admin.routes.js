@@ -295,10 +295,10 @@ router.put(
   },
 );
 
-// PUT /admin/users/:id/membership
+// PUT /admin/users/:id/membership  (staff ปรับวันหมดอายุได้ด้วย)
 router.put(
   '/users/:id/membership',
-  requireRole('admin'),
+  requireRole('staff', 'admin'),
   validate(membershipSchema),
   async (req, res, next) => {
     try {
@@ -310,10 +310,10 @@ router.put(
   },
 );
 
-// PUT /admin/users/:id/member-type
+// PUT /admin/users/:id/member-type  (staff ปรับประเภทแพ็คเกจได้ด้วย)
 router.put(
   '/users/:id/member-type',
-  requireRole('admin'),
+  requireRole('staff', 'admin'),
   validate(memberTypeSchema),
   async (req, res, next) => {
     try {
