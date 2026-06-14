@@ -1440,7 +1440,20 @@ const handleCheckinScan = async (raw) => {
 
     if (!uid) { showResult({ ok: false, title: 'QR ไม่ถูกต้อง', detail: 'ไม่พบรหัสสมาชิกใน QR' }); return }
 
-    const user = users.value.find(u => u.id === uid || u.lineUserId === uid)
+    // ถ้าหา user/booking ใน cache ไม่เจอ (เช่นลูกค้าเพิ่งสมัคร/เพิ่งจองสดๆ)
+    // ให้ดึงข้อมูลล่าสุดจาก backend หนึ่งครั้งแล้วค่อยตัดสินว่า "ไม่พบ" จริง
+    let refreshed = false
+    const ensureFresh = async () => {
+      if (refreshed) return
+      refreshed = true
+      await loadAllData(true)
+    }
+
+    let user = users.value.find(u => u.id === uid || u.lineUserId === uid)
+    if (!user) {
+      await ensureFresh()
+      user = users.value.find(u => u.id === uid || u.lineUserId === uid)
+    }
     if (!user) { showResult({ ok: false, title: 'ไม่พบสมาชิก', detail: `รหัส: ${uid}` }); return }
 
     const valid = isMembershipValid(user)
@@ -1467,10 +1480,16 @@ const handleCheckinScan = async (raw) => {
         return
       }
 
-      const booking = classBookings.value.find(b =>
+      const findBooking = () => classBookings.value.find(b =>
         (qrBookingId ? b.id === qrBookingId : (b.userId === uid && b.classId === qrClassId)) &&
         b.status === 'confirmed'
       )
+      let booking = findBooking()
+      if (!booking) {
+        // เผื่อลูกค้าเพิ่งจองสดๆ — ดึง bookings ล่าสุดแล้วหาอีกครั้ง
+        await ensureFresh()
+        booking = findBooking()
+      }
       if (!booking) {
         showResult({ ok: false, title: 'ไม่พบการจอง',
           name: user.nickname || user.displayName,

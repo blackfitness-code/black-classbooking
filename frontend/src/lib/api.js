@@ -48,6 +48,12 @@ export async function request(path, { method = 'GET', body, auth = true, headers
 
   const reqHeaders = { ...headers }
 
+  // ngrok free แสดงหน้าเตือน HTML ให้ browser แทน response จริง — header นี้ข้ามมัน
+  // (ใส่เฉพาะตอน backend อยู่หลัง ngrok; prod ไม่กระทบ)
+  if (BASE_URL.includes('ngrok')) {
+    reqHeaders['ngrok-skip-browser-warning'] = 'true'
+  }
+
   if (body !== undefined) {
     reqHeaders['Content-Type'] = 'application/json'
   }
@@ -83,7 +89,10 @@ export async function request(path, { method = 'GET', body, auth = true, headers
       try {
         const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(BASE_URL.includes('ngrok') ? { 'ngrok-skip-browser-warning': 'true' } : {})
+          },
           body: JSON.stringify({ refreshToken: storedRefresh })
         })
         if (refreshRes.ok) {

@@ -199,6 +199,11 @@
           </div>
         </div>
       </div>
+
+      <!-- App version -->
+      <p class="text-center text-[11px] text-gray-300 mt-10 mb-2 select-none">
+        เวอร์ชัน {{ appVersion }} · {{ buildTime }}
+      </p>
     </main>
 
     <!-- Update Notice Modal -->
@@ -253,6 +258,10 @@ import UpcomingClasses from '../components/UpcomingClasses.vue'
 const router = useRouter()
 const liffStore = useLiffStore()
 const authStore = useAuthStore()
+
+// เวอร์ชันแอพ (inject ตอน build จาก package.json + เวลา build) — ดู vite.config.js
+const appVersion = __APP_VERSION__
+const buildTime = __BUILD_TIME__
 
 const UPDATE_KEY = 'update_notice_v1'
 const showUpdateModal = ref(false)

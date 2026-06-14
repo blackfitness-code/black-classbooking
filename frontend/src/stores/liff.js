@@ -60,7 +60,6 @@ export const useLiffStore = defineStore('liff', {
 
             try {
                 await liff.init({ liffId: this.liffId })
-                this.isLiffReady = true
                 this.isInClient = liff.isInClient()
                 this.initError = null
 
@@ -72,6 +71,10 @@ export const useLiffStore = defineStore('liff', {
                     this.isLoggedIn = false
                     this.profile = null
                 }
+
+                // ตั้ง ready หลัง profile โหลดเสร็จ — กัน race ที่ consumer (เช่นหน้า /card)
+                // เห็น isLiffReady=true แต่ profile ยัง null แล้วเด้งออกหน้าหลัก
+                this.isLiffReady = true
             } catch (error) {
                 console.error('LIFF initialization failed:', error)
                 this.isLiffReady = true
