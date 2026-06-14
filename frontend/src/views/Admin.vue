@@ -1217,11 +1217,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import { db } from '../firebase'
-import {
-  collection, getDocs, addDoc, deleteDoc, doc, updateDoc,
-  Timestamp, increment, getDoc, setDoc
-} from 'firebase/firestore'
+import api from '../lib/api'
 import { format } from 'date-fns'
 import { th } from 'date-fns/locale'
 import Swal from '../utils/dialog'
@@ -1390,16 +1386,15 @@ const loadCheckins = async () => {
   if (!checkinDate.value) { todayCheckins.value = []; return }
   loadingCheckins.value = true
   try {
-    const snap = await getDocs(collection(db, 'checkins'))
-    todayCheckins.value = snap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
+    const { checkins } = await api.get('/admin/checkins')
+    todayCheckins.value = checkins
       .filter(c => (c.classDate || '') === checkinDate.value)
       .map(c => ({
         id: c.id, uid: c.uid, name: c.name, memberType: c.memberType,
         pictureUrl: users.value.find(u => u.id === c.uid)?.pictureUrl || '',
         classId: c.classId || '', className: c.className || '',
         membershipValid: c.membershipValid,
-        time: c.checkedInAt?.toDate ? format(c.checkedInAt.toDate(), 'HH:mm') : ''
+        time: c.checkedInAt ? format(new Date(c.checkedInAt), 'HH:mm') : ''
       }))
   } catch (e) {
     console.error('load checkins failed:', e)
@@ -1508,16 +1503,21 @@ const handleCheckinScan = async (raw) => {
       : { ok: false, title: 'สมาชิกหมดอายุ', name: entry.name, detail: `${where}กรุณาต่ออายุ`, pictureUrl: entry.pictureUrl })
 
     try {
-      const ref = await addDoc(collection(db, 'checkins'), {
-        uid, name: entry.name, memberType: entry.memberType, membershipValid: valid,
-        classId: cls?.id || '', className, classDate: cls?.date || checkinDate.value || '',
-        classTime: cls?.time || '', instructor: cls?.instructor || '', checkedInAt: Timestamp.fromDate(now)
+      // ส่ง payload ตาม API contract: uid, classId, bookingId, date
+      const saved = await api.post('/checkins', {
+        uid,
+        classId: qrClassId || cls?.id || '',
+        bookingId: qrBookingId || '',
+        date: qrDate || cls?.date || checkinDate.value || ''
       })
-      entry.id = ref.id
+      entry.id = saved.checkin?.id || entry.id
     } catch (e) {
       console.error('checkin save failed:', e)
+      const msg = e?.code === 'ALREADY_CHECKED_IN'
+        ? 'เช็คอินไปแล้ว'
+        : (e?.code || e?.message || 'unknown')
       showResult({ ok: false, title: 'บันทึกไม่สำเร็จ', name: entry.name,
-        detail: `เขียนฐานข้อมูลไม่ได้: ${e?.code || e?.message || 'unknown'}`, pictureUrl: entry.pictureUrl })
+        detail: `เขียนฐานข้อมูลไม่ได้: ${msg}`, pictureUrl: entry.pictureUrl })
     }
   } catch (e) {
     console.error('checkin error:', e)
@@ -1536,7 +1536,7 @@ const deleteCheckin = async (c) => {
   })
   if (!result.isConfirmed) return
   try {
-    await deleteDoc(doc(db, 'checkins', c.id))
+    await api.del('/admin/checkins/' + c.id)
     todayCheckins.value = todayCheckins.value.filter(x => x.id !== c.id)
     Swal.fire({ title: 'ลบแล้ว', icon: 'success', timer: 1200, showConfirmButton: false })
   } catch (e) {
@@ -1782,34 +1782,21 @@ const loadAllData = async (forceRefresh = false) => {
         return
       }
     }
-    const [classesSnap, usersSnap, bookingsSnap] = await Promise.all([
-      getDocs(collection(db, 'classes')),
-      getDocs(collection(db, 'users')),
-      getDocs(collection(db, 'bookings')),
+    const [{ classes: rawClasses }, { users: rawUsers }, { bookings: rawBookings }] = await Promise.all([
+      api.get('/admin/classes'),
+      api.get('/admin/users'),
+      api.get('/admin/bookings'),
     ])
-    classes.value = classesSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => {
+    classes.value = rawClasses.sort((a, b) => {
       const now = new Date()
       const da = new Date(`${a.date}T${a.time}`), db_ = new Date(`${b.date}T${b.time}`)
       const aP = da < now, bP = db_ < now
       if (aP && !bP) return 1; if (!aP && bP) return -1
       return aP ? db_ - da : da - db_
     })
-    users.value = usersSnap.docs.map(d => {
-      const data = d.data()
-      // Convert Firestore Timestamps to Date for cache
-      if (data.membershipExpiry?.toDate) data.membershipExpiry = data.membershipExpiry.toDate()
-      if (data.cooldownUntil?.toDate) data.cooldownUntil = data.cooldownUntil.toDate()
-      if (data.createdAt?.toDate) data.createdAt = data.createdAt.toDate()
-      if (data.updatedAt?.toDate) data.updatedAt = data.updatedAt.toDate()
-      return { id: d.id, ...data }
-    })
-    const bookingsData = bookingsSnap.docs.map(d => {
-      const data = d.data()
-      if (data.bookedAt?.toDate) data.bookedAt = data.bookedAt.toDate()
-      if (data.cancelledAt?.toDate) data.cancelledAt = data.cancelledAt.toDate()
-      if (data.canCancelUntil?.toDate) data.canCancelUntil = data.canCancelUntil.toDate()
-      return { id: d.id, ...data }
-    })
+    // API คืน ISO strings แทน Timestamps — ยังคง compatible กับ helper ที่ตรวจ .toDate
+    users.value = rawUsers
+    const bookingsData = rawBookings
     classBookings.value = bookingsData
     allBookings.value = [...bookingsData].sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`))
     setCachedData(CACHE_KEYS.ADMIN_CLASSES, classes.value)
@@ -1835,20 +1822,15 @@ const removeUserLocal = (id) => {
 
 const loadCustomClassTypes = async () => {
   try {
-    const snap = await getDoc(doc(db, 'settings', 'classTypes'))
-    if (snap.exists()) {
-      customClassSettings.value = snap.data()
-    }
+    const { classTypes } = await api.get('/admin/class-types')
+    if (classTypes) customClassSettings.value = classTypes
   } catch (err) {
-    // Ignore permission errors - settings collection may not exist yet
-    if (err.code !== 'permission-denied') {
-      console.error('Error loading custom class types:', err)
-    }
+    console.error('Error loading custom class types:', err)
   }
 }
 
 const saveCustomClassTypes = async () => {
-  await setDoc(doc(db, 'settings', 'classTypes'), customClassSettings.value)
+  await api.put('/admin/class-types', { classTypes: customClassSettings.value })
 }
 
 const refreshData = async () => {
@@ -1883,7 +1865,7 @@ const updateClass = async () => {
   try {
     const subtypeInfo = getSubtypeInfoLocal(editingClass.value.type, editingClass.value.subtype)
     if (!subtypeInfo) throw new Error('ไม่พบข้อมูลคลาส')
-    await updateDoc(doc(db, 'classes', editingClass.value.id), {
+    const { class: updated } = await api.put('/admin/classes/' + editingClass.value.id, {
       type: editingClass.value.type,
       subtype: editingClass.value.subtype,
       name: subtypeInfo.label,
@@ -1892,11 +1874,12 @@ const updateClass = async () => {
       time: editingClass.value.time,
       instructor: editingClass.value.instructor,
       maxCapacity: editingClass.value.maxCapacity,
-      updatedAt: new Date(),
     })
+    // อัปเดต local state จาก response
+    const i = classes.value.findIndex(c => c.id === updated.id)
+    if (i !== -1) classes.value[i] = { ...classes.value[i], ...updated }
     showEditClassModal.value = false
     editingClass.value = null
-    await loadAllData(true)
     Swal.fire({ title: 'สำเร็จ!', text: 'แก้ไขคลาสสำเร็จ!', icon: 'success', confirmButtonText: 'ตกลง' })
   } catch (err) {
     console.error(err)
@@ -1911,7 +1894,7 @@ const addClass = async () => {
   try {
     const subtypeInfo = getSubtypeInfoLocal(newClass.value.type, newClass.value.subtype)
     if (!subtypeInfo) throw new Error('ไม่พบข้อมูลคลาส')
-    await addDoc(collection(db, 'classes'), {
+    const { class: created } = await api.post('/admin/classes', {
       type: newClass.value.type,
       subtype: newClass.value.subtype,
       name: subtypeInfo.label,
@@ -1920,12 +1903,11 @@ const addClass = async () => {
       time: newClass.value.time,
       instructor: newClass.value.instructor,
       maxCapacity: newClass.value.maxCapacity,
-      currentBookings: 0,
-      createdAt: new Date(),
     })
+    // push คลาสใหม่เข้า local state แทนการ reload ทั้งก้อน
+    classes.value.push(created)
     newClass.value = { type: 'yoga', subtype: '', date: '', time: '', instructor: '', maxCapacity: 10 }
     showAddClassModal.value = false
-    await loadAllData(true)
     Swal.fire({ title: 'สำเร็จ!', text: 'เพิ่มคลาสสำเร็จ!', icon: 'success', confirmButtonText: 'ตกลง' })
   } catch (err) {
     console.error(err)
@@ -1948,8 +1930,8 @@ const deleteClass = async (yogaClass) => {
   })
   if (!result.isConfirmed) return
   try {
-    await deleteDoc(doc(db, 'classes', yogaClass.id))
-    await loadAllData(true)
+    await api.del('/admin/classes/' + yogaClass.id)
+    classes.value = classes.value.filter(c => c.id !== yogaClass.id)
     Swal.fire({ title: 'สำเร็จ!', text: 'ลบคลาสสำเร็จ!', icon: 'success', confirmButtonText: 'ตกลง' })
   } catch (err) {
     console.error(err)
@@ -1974,15 +1956,16 @@ const removeMemberFromClass = async (booking, yogaClass) => {
   })
   if (!result.isConfirmed) return
   try {
-    await updateDoc(doc(db, 'bookings', booking.id), {
-      status: 'cancelled',
-      cancelledAt: new Date(),
-      cancelledBy: 'admin',
-    })
-    await updateDoc(doc(db, 'classes', yogaClass.id), {
-      currentBookings: increment(-1),
-    })
-    await loadAllData(true)
+    // server จัดการ transaction decrement class.currentBookings ด้วย
+    const { booking: updated } = await api.put('/admin/bookings/' + booking.id, { status: 'cancelled' })
+    // อัปเดต local bookings
+    const i = classBookings.value.findIndex(b => b.id === updated.id)
+    if (i !== -1) classBookings.value[i] = { ...classBookings.value[i], ...updated }
+    const j = allBookings.value.findIndex(b => b.id === updated.id)
+    if (j !== -1) allBookings.value[j] = { ...allBookings.value[j], ...updated }
+    // อัปเดต currentBookings ของคลาสใน local state
+    const ci = classes.value.findIndex(c => c.id === yogaClass.id)
+    if (ci !== -1) classes.value[ci] = { ...classes.value[ci], currentBookings: Math.max(0, (classes.value[ci].currentBookings || 1) - 1) }
     Swal.fire({ title: 'สำเร็จ!', text: 'ลบสมาชิกออกจากคลาสสำเร็จ!', icon: 'success', timer: 2000, showConfirmButton: false })
   } catch (err) {
     console.error(err)
@@ -2018,24 +2001,23 @@ const confirmAddMembers = async () => {
   addingMember.value = true
   const yogaClass = addMemberTargetClass.value
   try {
+    let lastCurrentBookings = yogaClass.currentBookings || 0
     for (const lineUserId of selectedMembersToAdd.value) {
       const user = users.value.find(u => u.lineUserId === lineUserId)
       if (!user) continue
-      await addDoc(collection(db, 'bookings'), {
-        userId: lineUserId,
+      // admin booking on behalf — server จัดการ transaction increment
+      const { booking: newBooking, currentBookings } = await api.post('/admin/bookings', {
         classId: yogaClass.id,
-        className: yogaClass.name,
-        date: yogaClass.date,
-        time: yogaClass.time,
-        instructor: yogaClass.instructor,
-        status: 'confirmed',
-        bookedAt: new Date(),
-        canCancelUntil: new Date(`${yogaClass.date}T${yogaClass.time}:00`),
+        userId: lineUserId,
       })
-      await updateDoc(doc(db, 'classes', yogaClass.id), { currentBookings: increment(1) })
+      classBookings.value.push(newBooking)
+      allBookings.value.unshift(newBooking)
+      if (currentBookings !== undefined) lastCurrentBookings = currentBookings
     }
+    // อัปเดต currentBookings ของคลาสใน local state
+    const ci = classes.value.findIndex(c => c.id === yogaClass.id)
+    if (ci !== -1) classes.value[ci] = { ...classes.value[ci], currentBookings: lastCurrentBookings }
     showAddMemberModal.value = false
-    await loadAllData(true)
     Swal.fire({ title: 'สำเร็จ!', text: `เพิ่มสมาชิก ${selectedMembersToAdd.value.length} คนสำเร็จ!`, icon: 'success', confirmButtonText: 'ตกลง' })
   } catch (err) {
     console.error(err)
@@ -2061,7 +2043,7 @@ const addClassType = async () => {
       ...customClassSettings.value,
       customTypes: [...(customClassSettings.value.customTypes || []), { value: val, label }],
     }
-    await setDoc(doc(db, 'settings', 'classTypes'), updated)
+    await api.put('/admin/class-types', { classTypes: updated })
     customClassSettings.value = updated
     newClassType.value = { value: '', label: '' }
     showAddTypeModal.value = false
@@ -2091,7 +2073,7 @@ const deleteClassType = async (type) => {
     const customSubtypes = { ...(customClassSettings.value.customSubtypes || {}) }
     delete customSubtypes[type.value]
     const updated = { ...customClassSettings.value, customTypes, customSubtypes }
-    await setDoc(doc(db, 'settings', 'classTypes'), updated)
+    await api.put('/admin/class-types', { classTypes: updated })
     customClassSettings.value = updated
     Swal.fire({ title: 'สำเร็จ!', text: 'ลบประเภทสำเร็จ!', icon: 'success', timer: 2000, showConfirmButton: false })
   } catch (err) {
@@ -2128,7 +2110,7 @@ const addSubtype = async () => {
         [typeValue]: [...currentSubs, { value: val, label, description }],
       },
     }
-    await setDoc(doc(db, 'settings', 'classTypes'), updated)
+    await api.put('/admin/class-types', { classTypes: updated })
     customClassSettings.value = updated
     newSubtype.value = { value: '', label: '', description: '' }
     showAddSubtypeModal.value = false
@@ -2158,7 +2140,7 @@ const deleteSubtype = async (typeValue, subtype) => {
       ...customClassSettings.value,
       customSubtypes: { ...(customClassSettings.value.customSubtypes || {}), [typeValue]: currentSubs },
     }
-    await setDoc(doc(db, 'settings', 'classTypes'), updated)
+    await api.put('/admin/class-types', { classTypes: updated })
     customClassSettings.value = updated
     Swal.fire({ title: 'สำเร็จ!', icon: 'success', timer: 1500, showConfirmButton: false })
   } catch (err) {
@@ -2219,11 +2201,12 @@ const setCooldown = async () => {
     const cooldownUntil = new Date()
     cooldownUntil.setDate(cooldownUntil.getDate() + cooldownDays.value)
     cooldownUntil.setHours(23, 59, 59, 999)
+    // ส่งเป็น YYYY-MM-DD string ตาม API contract
+    const cooldownUntilStr = cooldownUntil.toISOString().split('T')[0]
 
-    await updateDoc(doc(db, 'users', cooldownTargetUser.value.id), {
-      cooldownUntil: Timestamp.fromDate(cooldownUntil),
+    await api.put('/admin/users/' + cooldownTargetUser.value.id + '/cooldown', {
+      cooldownUntil: cooldownUntilStr,
       cooldownReason: cooldownReason.value.trim() || null,
-      updatedAt: new Date(),
     })
     showCooldownModal.value = false
     patchUserLocal(cooldownTargetUser.value.id, { cooldownUntil: cooldownUntil, cooldownReason: cooldownReason.value.trim() || null, updatedAt: new Date() })
@@ -2254,10 +2237,9 @@ const clearCooldown = async (user) => {
   })
   if (!result.isConfirmed) return
   try {
-    await updateDoc(doc(db, 'users', user.id), {
+    await api.put('/admin/users/' + user.id + '/cooldown', {
       cooldownUntil: null,
       cooldownReason: null,
-      updatedAt: new Date(),
     })
     patchUserLocal(user.id, { cooldownUntil: null, cooldownReason: null, updatedAt: new Date() })
     Swal.fire({ title: 'ยกเลิก Cooldown สำเร็จ!', icon: 'success', timer: 2000, showConfirmButton: false })
@@ -2301,7 +2283,7 @@ const setMembershipExpiry = async (user) => {
     return
   }
   try {
-    await updateDoc(doc(db, 'users', user.id), { membershipExpiry: Timestamp.fromDate(new Date(date)), updatedAt: new Date() })
+    await api.put('/admin/users/' + user.id + '/membership', { membershipExpiry: date })
     delete selectedDates.value[user.id]
     patchUserLocal(user.id, { membershipExpiry: new Date(date), updatedAt: new Date() })
     Swal.fire({ title: 'สำเร็จ!', text: 'ตั้งวันหมดอายุสำเร็จ!', icon: 'success', confirmButtonText: 'ตกลง' })
@@ -2326,7 +2308,7 @@ const updateMemberType = async (user, newType) => {
   })
   if (!result.isConfirmed) { users.value = [...users.value]; return }
   try {
-    await updateDoc(doc(db, 'users', user.id), { memberType: newType, updatedAt: new Date() })
+    await api.put('/admin/users/' + user.id + '/member-type', { memberType: newType })
     patchUserLocal(user.id, { memberType: newType, updatedAt: new Date() })
     Swal.fire({ title: 'สำเร็จ!', text: `เปลี่ยนแพ็คเกจเป็น ${label(newType)} สำเร็จ!`, icon: 'success', confirmButtonText: 'ตกลง' })
   } catch (e) {
@@ -2362,7 +2344,7 @@ const saveEditUser = async () => {
   savingUser.value = true
   try {
     const u = editingUser.value
-    await updateDoc(doc(db, 'users', u.id), {
+    await api.put('/admin/users/' + u.id, {
       nickname: (u.nickname || '').trim(),
       firstName: (u.firstName || '').trim(),
       lastName: (u.lastName || '').trim(),
@@ -2371,7 +2353,6 @@ const saveEditUser = async () => {
       gender: u.gender || '',
       birthDate: u.birthDate || '',
       healthIssues: (u.healthIssues || '').trim(),
-      updatedAt: new Date()
     })
     showEditUserModal.value = false
     patchUserLocal(u.id, { nickname: (u.nickname || '').trim(), firstName: (u.firstName || '').trim(), lastName: (u.lastName || '').trim(), nationalId: (u.nationalId || '').trim(), phone: (u.phone || '').trim(), gender: u.gender || '', birthDate: u.birthDate || '', healthIssues: (u.healthIssues || '').trim(), updatedAt: new Date() })
@@ -2397,7 +2378,7 @@ const deleteUser = async (user) => {
   })
   if (!res.isConfirmed) return
   try {
-    await deleteDoc(doc(db, 'users', user.id))
+    await api.del('/admin/users/' + user.id)
     if (expandedUserId.value === user.id) expandedUserId.value = null
     removeUserLocal(user.id)
     Swal.fire({ title: 'ลบแล้ว', icon: 'success', timer: 1200, showConfirmButton: false })
@@ -2467,44 +2448,26 @@ const onImportFile = async (e) => {
     if (!confirm.isConfirmed) return
 
     importing.value = true
-    let created = 0, updated = 0, unchanged = 0, failed = 0
-    const createdList = [], updatedList = []
+    let failed = 0
     const parsePkg = (v) => {
       const s = (v || '').trim().toLowerCase()
       return s === 'platinum' ? 'platinum' : s === 'gold' ? 'gold' : ''
     }
-    const parseDateTs = (v) => {
+    const parseDateStr = (v) => {
       const s = (v || '').trim()
       if (!s) return null
       const d = new Date(s)
-      return isNaN(d.getTime()) ? null : Timestamp.fromDate(d)
-    }
-    const existingMap = new Map(users.value.map(u => [u.id, u]))
-    // เทียบว่าค่าจากไฟล์ต่างจากของเดิมไหม (เพื่อเขียนเฉพาะที่เปลี่ยนจริง)
-    const isSame = (key, val, user) => {
-      if (key === 'membershipExpiry') {
-        const ex = user.membershipExpiry
-        const exMs = ex?.toDate ? ex.toDate().getTime() : (ex ? new Date(ex).getTime() : null)
-        const nvMs = val?.toDate ? val.toDate().getTime() : null
-        return exMs === nvMs
-      }
-      if (key === 'role') return (user.role || 'user') === val
-      if (key === 'memberType') return (user.memberType || '') === (val || '')
-      return (user[key] || '') === (val || '')
+      return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0]
     }
 
-    const FIELD_LABELS = {
-      nickname: 'ชื่อเล่น', firstName: 'ชื่อจริง', lastName: 'นามสกุล',
-      phone: 'เบอร์โทร', birthDate: 'วันเกิด', gender: 'เพศ',
-      memberType: 'แพ็คเกจ', role: 'Role', membershipExpiry: 'วันหมดอายุ'
-    }
-
+    // สร้าง array ของ record สำหรับ bulk import
+    const records = []
     for (const r of dataRows) {
       const uid = (r[col.uid] || '').trim()
       if (!uid) { failed++; continue }
-      const fields = {}
+      const rec = { lineUserId: uid }
       const setIf = (i, key, transform) => {
-        if (i > -1) { const v = (r[i] || '').trim(); fields[key] = transform ? transform(v) : v }
+        if (i > -1) { const v = (r[i] || '').trim(); rec[key] = transform ? transform(v) : v }
       }
       setIf(col.nickname, 'nickname')
       setIf(col.firstName, 'firstName')
@@ -2512,37 +2475,24 @@ const onImportFile = async (e) => {
       setIf(col.phone, 'phone')
       setIf(col.birthDate, 'birthDate')
       setIf(col.gender, 'gender')
-      if (col.memberType > -1) fields.memberType = parsePkg(r[col.memberType])
-      if (col.role > -1) fields.role = (r[col.role] || '').trim().toLowerCase() === 'admin' ? 'admin' : 'user'
-      if (col.expiry > -1) { const ts = parseDateTs(r[col.expiry]); if (ts) fields.membershipExpiry = ts }
-
-      const existing = existingMap.get(uid)
-      const pick = (key) => fields[key] !== undefined ? fields[key] : existing?.[key]
-      const nickname = pick('nickname') || existing?.displayName || uid
-      const fullName = [pick('firstName'), pick('lastName')].filter(Boolean).join(' ')
-      try {
-        if (!existing) {
-          // เพิ่มใหม่
-          await setDoc(doc(db, 'users', uid),
-            { ...fields, lineUserId: uid, createdAt: new Date(), updatedAt: new Date(), profileCompleted: true },
-            { merge: true })
-          created++
-          createdList.push({ nickname, fullName })
-          existingMap.set(uid, { id: uid, ...fields })
-        } else {
-          // เขียนเฉพาะฟิลด์ที่เปลี่ยนจริง
-          const changes = {}
-          for (const [key, val] of Object.entries(fields)) {
-            if (!isSame(key, val, existing)) changes[key] = val
-          }
-          if (Object.keys(changes).length === 0) { unchanged++; continue }
-          await setDoc(doc(db, 'users', uid), { ...changes, updatedAt: new Date() }, { merge: true })
-          updated++
-          updatedList.push({ nickname, fullName, fields: Object.keys(changes).map(k => FIELD_LABELS[k] || k) })
-        }
-      } catch (err) { console.error('import row failed', uid, err); failed++ }
+      if (col.memberType > -1) rec.memberType = parsePkg(r[col.memberType])
+      if (col.role > -1) rec.role = (r[col.role] || '').trim().toLowerCase() === 'admin' ? 'admin' : 'user'
+      if (col.expiry > -1) { const ds = parseDateStr(r[col.expiry]); if (ds) rec.membershipExpiry = ds }
+      records.push(rec)
     }
+
+    // ส่ง bulk import ครั้งเดียว
+    const { created, updated } = await api.post('/admin/users/import', { users: records })
+    const unchanged = records.length - failed - created - updated
     await loadAllData(true)
+
+    // สร้าง summary list จากข้อมูลที่มีหลัง reload
+    const existingMap = new Map(users.value.map(u => [u.id, u]))
+    const createdList = records.slice(0, created).map(rec => ({
+      nickname: existingMap.get(rec.lineUserId)?.nickname || rec.nickname || rec.lineUserId,
+      fullName: [rec.firstName, rec.lastName].filter(Boolean).join(' ')
+    }))
+    const updatedList = []
     const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
     const nameHtml = (r) => `${esc(r.nickname)}${r.fullName ? ` <span class="text-gray-400">(${esc(r.fullName)})</span>` : ''}`
     const createdHtml = createdList.length
@@ -2626,7 +2576,7 @@ const updateUserRole = async (user, newRole) => {
   })
   if (!result.isConfirmed) { users.value = [...users.value]; return }
   try {
-    await updateDoc(doc(db, 'users', user.id), { role: newRole, updatedAt: new Date() })
+    await api.put('/admin/users/' + user.id + '/role', { role: newRole })
     patchUserLocal(user.id, { role: newRole, updatedAt: new Date() })
     Swal.fire({ title: 'สำเร็จ!', text: `เปลี่ยน Role เป็น ${newRole === 'admin' ? 'Admin' : 'User'} สำเร็จ!`, icon: 'success', confirmButtonText: 'ตกลง' })
   } catch (err) {

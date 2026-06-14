@@ -11,6 +11,17 @@ import { env } from '../config/env.js';
 import authRouter from './auth.routes.js';
 import meRouter from './me.routes.js';
 
+// Phase 2: Classes + Bookings + Members
+import classesRouter from './classes.routes.js';
+import bookingsRouter from './bookings.routes.js';
+import membersRouter from './members.routes.js';
+
+// Phase 2/3: Check-in (staff|admin)
+import checkinsRouter from './checkins.routes.js';
+
+// Phase 3: Admin operations
+import adminRouter from './admin.routes.js';
+
 const router = Router();
 
 // ---------------------------------------------------------------------------
@@ -36,21 +47,28 @@ router.use('/auth', authRouter);
 router.use('/me', meRouter);
 
 // ---------------------------------------------------------------------------
-// TODO Phase 2: Class management
-// import classesRouter from './classes.js';
-// router.use('/classes', classesRouter);
-
-// TODO Phase 2: Booking management
-// import bookingsRouter from './bookings.js';
-// router.use('/bookings', requireAuth, bookingsRouter);
-
-// TODO Phase 3: Check-in / QR
-// import checkinsRouter from './checkins.js';
-// router.use('/checkins', requireAuth, checkinsRouter);
-
-// TODO Phase 3: Admin operations
-// import adminRouter from './admin.js';
-// router.use('/admin', requireAuth, requireRole('admin'), adminRouter);
+// Phase 2: Class listing (auth handled inside router)
 // ---------------------------------------------------------------------------
+router.use('/classes', classesRouter);
+
+// ---------------------------------------------------------------------------
+// Phase 2: Booking management (auth handled inside router)
+// ---------------------------------------------------------------------------
+router.use('/bookings', bookingsRouter);
+
+// ---------------------------------------------------------------------------
+// Phase 2: Public member card (no auth — handled inside router)
+// ---------------------------------------------------------------------------
+router.use('/members', membersRouter);
+
+// ---------------------------------------------------------------------------
+// Phase 2/3: Check-in (requireAuth + requireRole inside router)
+// ---------------------------------------------------------------------------
+router.use('/checkins', checkinsRouter);
+
+// ---------------------------------------------------------------------------
+// Phase 3: Admin operations (requireAuth + requireRole applied inside router)
+// ---------------------------------------------------------------------------
+router.use('/admin', adminRouter);
 
 export default router;

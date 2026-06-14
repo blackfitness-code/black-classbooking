@@ -123,8 +123,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { db } from '../firebase'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import api from '../lib/api'
 import { format, isSameMonth } from 'date-fns'
 import { th } from 'date-fns/locale'
 
@@ -194,11 +193,8 @@ const loadBookings = async () => {
   if (!props.userId) { bookings.value = []; return }
   loading.value = true
   try {
-    const snap = await getDocs(query(
-      collection(db, 'bookings'),
-      where('userId', '==', props.userId)
-    ))
-    bookings.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    const { bookings: fetched } = await api.get('/bookings/me')
+    bookings.value = fetched
   } catch (e) {
     console.error('load upcoming bookings failed:', e)
   } finally {

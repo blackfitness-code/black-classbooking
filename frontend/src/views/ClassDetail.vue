@@ -288,8 +288,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { db } from '../firebase'
-import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, increment, runTransaction } from 'firebase/firestore'
+import api from '../lib/api'
 import { format } from 'date-fns'
 import { th } from 'date-fns/locale'
 import Swal from '../utils/dialog'
@@ -380,27 +379,13 @@ const loadClassDetail = async () => {
   loading.value = true
   try {
     const classId = route.params.id
-    const classDoc = await getDoc(doc(db, 'classes', classId))
-    
-    if (classDoc.exists()) {
-      yogaClass.value = {
-        id: classDoc.id,
-        ...classDoc.data()
-      }
-      
-      // Load user's bookings
-      if (authStore.userProfile?.lineUserId) {
-        const bookingsQuery = query(
-          collection(db, 'bookings'),
-          where('userId', '==', authStore.userProfile.lineUserId)
-        )
-        const bookingsSnapshot = await getDocs(bookingsQuery)
-        userBookings.value = bookingsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-      }
-    }
+    // ดึงข้อมูลคลาสและ bookings ของ user พร้อมกัน
+    const [{ class: cls }, bookingsResult] = await Promise.all([
+      api.get('/classes/' + classId),
+      authStore.userProfile?.lineUserId ? api.get('/bookings/me') : Promise.resolve({ bookings: [] })
+    ])
+    yogaClass.value = cls
+    userBookings.value = bookingsResult.bookings
   } catch (error) {
     console.error('Error loading class detail:', error)
     Swal.fire({
@@ -420,54 +405,36 @@ const bookClass = () => {
 
 const confirmBooking = async () => {
   if (!yogaClass.value || booking.value) return
-  if (authStore.userProfile?.memberType === 'gold') {
-    Swal.fire({ title: 'จองไม่ได้', text: 'แพ็คเกจ Gold ไม่สามารถจองคลาสได้', icon: 'warning', confirmButtonText: 'ตกลง' })
-    return
-  }
 
   booking.value = true
   try {
-    const classRef = doc(db, 'classes', yogaClass.value.id)
-    
-    await runTransaction(db, async (transaction) => {
-      const classSnap = await transaction.get(classRef)
-      if (!classSnap.exists()) throw new Error('ไม่พบข้อมูลคลาส')
-      
-      const classData = classSnap.data()
-      if (classData.currentBookings >= classData.maxCapacity) {
-        throw new Error('คลาสเต็มแล้ว')
-      }
-      
-      const bookingRef = doc(collection(db, 'bookings'))
-      transaction.set(bookingRef, {
-        userId: authStore.userProfile.lineUserId,
-        classId: yogaClass.value.id,
-        className: yogaClass.value.name,
-        date: yogaClass.value.date,
-        time: yogaClass.value.time,
-        instructor: yogaClass.value.instructor,
-        status: 'confirmed',
-        bookedAt: new Date(),
-        canCancelUntil: new Date(`${yogaClass.value.date}T${yogaClass.value.time}:00`)
-      })
-      
-      transaction.update(classRef, { currentBookings: increment(1) })
-    })
-    
-    await loadClassDetail()
+    const { booking: newBooking, currentBookings } = await api.post('/bookings', { classId: yogaClass.value.id })
+
+    // อัปเดต currentBookings ใน local state ตามที่ server ส่งกลับมา
+    yogaClass.value.currentBookings = currentBookings
+    userBookings.value.push(newBooking)
     showConfirmModal.value = false
-    
+
     Swal.fire({
       title: 'สำเร็จ!',
       text: 'จองคลาสสำเร็จ!',
       icon: 'success',
       confirmButtonText: 'ตกลง'
     })
-  } catch (error) {
-    console.error('Error booking class:', error)
+  } catch (err) {
+    console.error('Error booking class:', err)
+    // แปลง error code จาก server เป็นข้อความภาษาไทย
+    const msgMap = {
+      CLASS_FULL: 'คลาสเต็มแล้ว กรุณาเลือกคลาสอื่น',
+      ALREADY_BOOKED: 'คุณจองคลาสนี้ไปแล้ว',
+      MEMBERSHIP_EXPIRED: 'สมาชิกหมดอายุ',
+      IN_COOLDOWN: 'ถูกระงับการจองชั่วคราว',
+      GOLD_NOT_ALLOWED: 'แพ็คเกจ Gold ไม่สามารถจองได้',
+      BOOKING_WINDOW_CLOSED: 'อยู่นอกช่วงเวลาที่จองได้'
+    }
     Swal.fire({
       title: 'เกิดข้อผิดพลาด!',
-      text: error.message === 'คลาสเต็มแล้ว' ? 'คลาสเต็มแล้ว กรุณาเลือกคลาสอื่น' : 'เกิดข้อผิดพลาดในการจอง',
+      text: msgMap[err.code] ?? 'เกิดข้อผิดพลาดในการจอง',
       icon: 'error',
       confirmButtonText: 'ตกลง'
     })

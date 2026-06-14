@@ -233,8 +233,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import { db } from '../firebase'
-import { collection, query, where, getDocs, doc, increment, runTransaction } from 'firebase/firestore'
+import api from '../lib/api'
 import { format, addDays } from 'date-fns'
 import { th } from 'date-fns/locale'
 import Swal from '../utils/dialog'
@@ -321,11 +320,8 @@ const loadClasses = async () => {
   if (!selectedDate.value) return
   loading.value = true
   try {
-    const snapshot = await getDocs(query(
-      collection(db, 'classes'),
-      where('date', '==', selectedDate.value)
-    ))
-    classes.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+    const { classes: fetched } = await api.get('/classes?date=' + selectedDate.value)
+    classes.value = fetched
   } catch (error) {
     console.error('Error loading classes:', error)
   } finally {
@@ -337,11 +333,8 @@ const loadClasses = async () => {
 const loadUserBookings = async () => {
   if (!authStore.userProfile?.lineUserId) return
   try {
-    const snapshot = await getDocs(query(
-      collection(db, 'bookings'),
-      where('userId', '==', authStore.userProfile.lineUserId)
-    ))
-    userBookings.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+    const { bookings } = await api.get('/bookings/me')
+    userBookings.value = bookings
   } catch (error) {
     console.error('Error loading bookings:', error)
   }
@@ -354,51 +347,16 @@ const bookClass = (yogaClass) => {
 
 const confirmBooking = async () => {
   if (!selectedClass.value || booking.value) return
-  if (authStore.userProfile?.memberType === 'gold') {
-    Swal.fire({ title: 'จองไม่ได้', text: 'แพ็คเกจ Gold ไม่สามารถจองคลาสได้', icon: 'warning', confirmButtonText: 'ตกลง' })
-    return
-  }
   booking.value = true
 
   try {
-    const classRef = doc(db, 'classes', selectedClass.value.id)
+    const { booking: newBooking, currentBookings } = await api.post('/bookings', { classId: selectedClass.value.id })
 
-    let newBookingId
-    await runTransaction(db, async (transaction) => {
-      const classSnap = await transaction.get(classRef)
-      if (!classSnap.exists()) throw new Error('ไม่พบข้อมูลคลาส')
-
-      const classData = classSnap.data()
-      if (classData.currentBookings >= classData.maxCapacity) {
-        throw new Error('คลาสเต็มแล้ว')
-      }
-
-      const bookingRef = doc(collection(db, 'bookings'))
-      newBookingId = bookingRef.id
-      transaction.set(bookingRef, {
-        userId: authStore.userProfile.lineUserId,
-        classId: selectedClass.value.id,
-        className: selectedClass.value.name,
-        date: selectedDate.value,
-        time: selectedClass.value.time,
-        instructor: selectedClass.value.instructor,
-        status: 'confirmed',
-        bookedAt: new Date(),
-        canCancelUntil: new Date(`${selectedDate.value}T${selectedClass.value.time}:00`)
-      })
-      transaction.update(classRef, { currentBookings: increment(1) })
-    })
-
-    // Optimistic update — no need to reload all data
+    // อัปเดต currentBookings ของคลาสใน local state ตามที่ server ส่งกลับมา
     const booked = classes.value.find(c => c.id === selectedClass.value.id)
-    if (booked) booked.currentBookings++
+    if (booked) booked.currentBookings = currentBookings
 
-    userBookings.value.push({
-      id: newBookingId,
-      classId: selectedClass.value.id,
-      date: selectedDate.value,
-      status: 'confirmed'
-    })
+    userBookings.value.push(newBooking)
 
     showConfirmModal.value = false
     selectedClass.value = null
@@ -410,10 +368,19 @@ const confirmBooking = async () => {
       confirmButtonText: 'ตกลง',
       confirmButtonColor: '#FF8C61'
     })
-  } catch (error) {
+  } catch (err) {
+    // แปลง error code จาก server เป็นข้อความภาษาไทย
+    const msgMap = {
+      CLASS_FULL: 'คลาสเต็มแล้ว กรุณาเลือกคลาสอื่น',
+      ALREADY_BOOKED: 'คุณจองคลาสนี้ไปแล้ว',
+      MEMBERSHIP_EXPIRED: 'สมาชิกหมดอายุ',
+      IN_COOLDOWN: 'ถูกระงับการจองชั่วคราว',
+      GOLD_NOT_ALLOWED: 'แพ็คเกจ Gold ไม่สามารถจองได้',
+      BOOKING_WINDOW_CLOSED: 'อยู่นอกช่วงเวลาที่จองได้'
+    }
     Swal.fire({
       title: 'เกิดข้อผิดพลาด!',
-      text: error.message === 'คลาสเต็มแล้ว' ? 'คลาสเต็มแล้ว กรุณาเลือกคลาสอื่น' : 'เกิดข้อผิดพลาดในการจอง',
+      text: msgMap[err.code] ?? 'เกิดข้อผิดพลาดในการจอง',
       icon: 'error',
       confirmButtonText: 'ตกลง',
       confirmButtonColor: '#FF8C61'

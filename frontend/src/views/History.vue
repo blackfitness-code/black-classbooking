@@ -165,8 +165,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import { db } from '../firebase'
-import { collection, query, where, getDocs, updateDoc, doc, increment } from 'firebase/firestore'
+import api from '../lib/api'
 import { format } from 'date-fns'
 import { th } from 'date-fns/locale'
 import Swal from '../utils/dialog'
@@ -260,41 +259,38 @@ const cancelBooking = (booking) => {
 
 const confirmCancel = async () => {
   if (!selectedBooking.value) return
-  
+
   cancelling.value = selectedBooking.value.id
-  
+
   try {
-    // Update booking status
-    await updateDoc(doc(db, 'bookings', selectedBooking.value.id), {
-      status: 'cancelled',
-      cancelledAt: new Date()
-    })
-    
-    // Update class capacity
-    await updateDoc(doc(db, 'classes', selectedBooking.value.classId), {
-      currentBookings: increment(-1)
-    })
-    
-    // Update local state
+    await api.del('/bookings/' + selectedBooking.value.id)
+
+    // อัปเดต local state — เปลี่ยน status เป็น cancelled
     const bookingIndex = bookings.value.findIndex(b => b.id === selectedBooking.value.id)
     if (bookingIndex !== -1) {
       bookings.value[bookingIndex].status = 'cancelled'
     }
-    
+
     showCancelModal.value = false
     selectedBooking.value = null
-    
+
     Swal.fire({
       title: 'สำเร็จ!',
       text: 'ยกเลิกการจองสำเร็จ!',
       icon: 'success',
       confirmButtonText: 'ตกลง'
     })
-  } catch (error) {
-    console.error('Error cancelling booking:', error)
+  } catch (err) {
+    console.error('Error cancelling booking:', err)
+    // แปลง error code จาก server เป็นข้อความภาษาไทย
+    const msgMap = {
+      CANCEL_WINDOW_CLOSED: 'ไม่สามารถยกเลิกได้แล้ว (เหลือเวลาน้อยกว่า 5 ชม.)',
+      NOT_OWNER: 'ไม่ใช่การจองของคุณ',
+      NOT_CONFIRMED: 'การจองนี้ยกเลิกไม่ได้'
+    }
     Swal.fire({
       title: 'เกิดข้อผิดพลาด!',
-      text: 'เกิดข้อผิดพลาดในการยกเลิก',
+      text: msgMap[err.code] ?? 'เกิดข้อผิดพลาดในการยกเลิก',
       icon: 'error',
       confirmButtonText: 'ตกลง'
     })
@@ -306,15 +302,8 @@ const confirmCancel = async () => {
 const loadBookings = async () => {
   loading.value = true
   try {
-    const q = query(
-      collection(db, 'bookings'),
-      where('userId', '==', authStore.userProfile.lineUserId)
-    )
-    const snapshot = await getDocs(q)
-    bookings.value = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }))
+    const { bookings: fetched } = await api.get('/bookings/me')
+    bookings.value = fetched
   } catch (error) {
     console.error('Error loading bookings:', error)
   } finally {

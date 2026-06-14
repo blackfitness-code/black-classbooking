@@ -40,8 +40,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '../firebase'
+import api from '../lib/api'
 import { useLiffStore } from '../stores/liff'
 import { useAuthStore } from '../stores/auth'
 import MemberCard from '../components/MemberCard.vue'
@@ -61,23 +60,8 @@ const ownMode = computed(() => !route.params.id)
 // ─── Public card by id ────────────────────────────────────────
 async function loadById(id) {
   try {
-    const snap = await getDoc(doc(db, 'users', id))
-    if (!snap.exists()) {
-      error.value = true
-    } else {
-      const data = snap.data()
-      let expiry = data.membershipExpiry
-      if (expiry?.toDate) expiry = expiry.toDate()
-
-      member.value = {
-        lineUserId: snap.id,
-        displayName: data.nickname || data.displayName || 'สมาชิก',
-        fullName: [data.firstName, data.lastName].filter(Boolean).join(' '),
-        pictureUrl: data.pictureUrl || '',
-        membershipExpiry: expiry,
-        memberType: data.memberType || ''
-      }
-    }
+    const { card } = await api.get('/members/' + id + '/card')
+    member.value = card
   } catch {
     error.value = true
   } finally {
