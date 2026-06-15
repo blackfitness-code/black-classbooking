@@ -10,6 +10,10 @@ FROM node:20-slim
 # Set working directory
 WORKDIR /app
 
+# Default to production so the app never falls into dev mode (dev-bypass login,
+# insecure JWT fallback) if NODE_ENV is forgotten. Cloud Run can still override.
+ENV NODE_ENV=production
+
 # Copy dependency manifests first for better layer caching
 COPY package.json ./
 COPY package-lock.json* ./
