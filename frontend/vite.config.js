@@ -8,12 +8,12 @@ const buildTime = new Date()
   .toLocaleString('sv-SE', { timeZone: 'Asia/Bangkok' })
   .slice(0, 16) // "YYYY-MM-DD HH:mm"
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [vue()],
-  // Enable Vue DevTools even in production builds so the browser
-  // extension can inspect the app outside of `vite dev`.
+  // เปิด DevTools เฉพาะ dev build — production จะ strip ออกเพื่อลดขนาด bundle
+  // Enable DevTools only in dev builds; stripped in production to reduce bundle size.
   define: {
-    __VUE_PROD_DEVTOOLS__: 'true',
+    __VUE_PROD_DEVTOOLS__: JSON.stringify(mode !== 'production'),
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_TIME__: JSON.stringify(buildTime)
   },
@@ -39,4 +39,4 @@ export default defineConfig({
   optimizeDeps: {
     include: ['vue', 'vue-router', 'pinia', 'date-fns']
   }
-})
+}))

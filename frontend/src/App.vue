@@ -15,14 +15,55 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useLiffStore } from './stores/liff'
+import { useAuthStore } from './stores/auth'
 import BottomNav from './components/BottomNav.vue'
 import DevTools from './components/DevTools.vue'
 
 const liffStore = useLiffStore()
+const authStore = useAuthStore()
+
+// Poll โปรไฟล์ตัวเองทุก 30 วิ เพื่อรับการเปลี่ยนแปลงจาก admin (สิทธิ์/แพ็คเกจ/วันหมดอายุ)
+// แบบ realtime — Firestore เป็น deny-all ฟัง listener ตรงไม่ได้ จึงใช้ poll /me (อ่าน doc เดียว ถูก)
+// Poll own profile every 30s to pick up admin changes; pauses while the tab is hidden.
+const PROFILE_POLL_MS = 30000
+let profileTimer = null
+
+const startProfilePoll = () => {
+  if (profileTimer) clearInterval(profileTimer)
+  profileTimer = setInterval(() => authStore.refreshUserProfile(), PROFILE_POLL_MS)
+}
+
+const stopProfilePoll = () => {
+  if (profileTimer) { clearInterval(profileTimer); profileTimer = null }
+}
+
+// กลับมา foreground → ดึงทันที + เริ่ม poll ใหม่; ซ่อนแท็บ → หยุด poll ประหยัด reads
+// Foreground → refetch immediately and (re)start polling; hidden → stop polling to save reads.
+const handleVisibility = () => {
+  if (document.visibilityState === 'visible') {
+    authStore.refreshUserProfile()
+    startProfilePoll()
+  } else {
+    stopProfilePoll()
+  }
+}
+
+const handleFocus = () => {
+  authStore.refreshUserProfile()
+}
 
 onMounted(async () => {
   await liffStore.initLiff()
+  document.addEventListener('visibilitychange', handleVisibility)
+  window.addEventListener('focus', handleFocus)
+  if (document.visibilityState === 'visible') startProfilePoll()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibility)
+  window.removeEventListener('focus', handleFocus)
+  stopProfilePoll()
 })
 </script>

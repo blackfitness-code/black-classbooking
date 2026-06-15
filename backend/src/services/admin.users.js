@@ -200,6 +200,21 @@ export async function importUsers(records) {
     'gender', 'memberType', 'role',
   ];
 
+  // Firestore batch write — max 500 ops per batch
+  // เขียนแบบ batch เพื่อลด round-trips (max 500 ops ต่อ batch)
+  const MAX_BATCH_OPS = 500;
+  let batch = db.batch();
+  let opCount = 0;
+
+  // Helper: commit current batch and start a fresh one
+  const flushBatch = async () => {
+    if (opCount > 0) {
+      await batch.commit();
+      batch = db.batch();
+      opCount = 0;
+    }
+  };
+
   for (const record of records) {
     const uid = (record.lineUserId || '').trim();
     if (!uid) continue;
@@ -224,8 +239,10 @@ export async function importUsers(records) {
     const existing = existingMap.get(uid);
 
     if (!existing) {
-      // New user
-      await docRef.set(
+      // New user — stage onto batch
+      if (opCount >= MAX_BATCH_OPS) await flushBatch();
+      batch.set(
+        docRef,
         {
           ...fields,
           lineUserId: uid,
@@ -236,6 +253,7 @@ export async function importUsers(records) {
         },
         { merge: true },
       );
+      opCount++;
       created++;
     } else {
       // Existing user — write only changed fields
@@ -262,10 +280,16 @@ export async function importUsers(records) {
         continue;
       }
 
-      await docRef.set({ ...changes, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      // Stage onto batch
+      if (opCount >= MAX_BATCH_OPS) await flushBatch();
+      batch.set(docRef, { ...changes, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      opCount++;
       updated++;
     }
   }
+
+  // Commit any remaining ops
+  await flushBatch();
 
   return { created, updated };
 }

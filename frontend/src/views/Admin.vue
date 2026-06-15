@@ -1791,14 +1791,16 @@ const filteredAddMemberUsers = computed(() => {
 
 const loadAllData = async (forceRefresh = false) => {
   try {
+    // Stale-while-revalidate: วาดจาก cache ก่อนเพื่อ instant paint แล้ว revalidate เสมอ
+    // (ไม่ return กลางคัน — ป้องกัน empty-array-truthy ทำให้ข้อมูลค้าง)
     if (!forceRefresh) {
       const cc = getCachedData(CACHE_KEYS.ADMIN_CLASSES)
       const cu = getCachedData(CACHE_KEYS.ADMIN_USERS)
       const cb = getCachedData(CACHE_KEYS.ADMIN_BOOKINGS)
-      if (cc && cu && cb) {
+      if (Array.isArray(cc) && cc.length && Array.isArray(cu) && cu.length && Array.isArray(cb) && cb.length) {
         classes.value = cc; users.value = cu
         classBookings.value = cb; allBookings.value = cb
-        return
+        // ไม่ return — ดึงข้อมูลสดจาก API ต่อเสมอ
       }
     }
     const [{ classes: rawClasses }, { users: rawUsers }, { bookings: rawBookings }] = await Promise.all([

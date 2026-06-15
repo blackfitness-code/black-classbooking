@@ -297,12 +297,18 @@ const isPending = computed(() =>
   !['gold', 'platinum'].includes(authStore.userProfile?.memberType)
 )
 
+// เพิ่ม version เฉพาะตอนที่ image โหลด error เพื่อบังคับ refresh — ไม่ใส่ Date.now() ทุก render
+// Append cache-buster only when explicitly forcing a refresh after an image load error —
+// not on every render, which would bypass browser caching and re-fetch on every recompute.
+const avatarVersion = ref(0)
+
 const profilePictureUrl = computed(() => {
   const url = liffStore.profile?.pictureUrl
   if (!url) return null
+  if (avatarVersion.value === 0) return url
   try {
     const u = new URL(url)
-    u.searchParams.set('t', Date.now().toString())
+    u.searchParams.set('t', String(avatarVersion.value))
     return u.toString()
   } catch {
     return url
@@ -310,10 +316,15 @@ const profilePictureUrl = computed(() => {
 })
 
 const refreshProfile = async () => {
-  try { await liffStore.refreshProfile() } catch {}
+  // รีเฟรชทั้งรูป LINE และโปรไฟล์จาก backend (สิทธิ์/แพ็คเกจ/วันหมดอายุ)
+  // Refresh both the LINE profile (avatar) and the backend profile (role/membership/expiry).
+  await Promise.allSettled([
+    liffStore.refreshProfile(),
+    authStore.refreshUserProfile(),
+  ])
 }
 
-const handleImageError = () => { refreshProfile() }
+const handleImageError = () => { avatarVersion.value++; refreshProfile() }
 
 const openScheduleImage = () => {
   window.open('https://firebasestorage.googleapis.com/v0/b/blackyoga-2748c.firebasestorage.app/o/85e92359-3955-43b4-ad03-2cbb03cf8723.jpg?alt=media&token=5476fd86-7316-4475-93bd-229eb3b36d30', '_blank')

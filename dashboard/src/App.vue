@@ -225,6 +225,9 @@ const knownCompletedIds = new Set()
 let isFirstLoad = true
 let pollTimer = null
 let bellRingTimer = null
+// flag: polling is "logically active" (ต่างจากการ pause ตอน tab ซ่อน)
+// flag: polling is logically active (distinct from being paused while tab is hidden)
+let pollingActive = false
 
 function getCompletedUsers(fetched) {
   return fetched
@@ -294,19 +297,28 @@ async function fetchUsers() {
   }
 }
 
+// เริ่ม/รีสตาร์ท interval เฉยๆ (ไม่ reset state) — ใช้ใน startPolling และ handleVisibility
+// (Re)starts just the interval without touching state — used in startPolling & handleVisibility.
+function startInterval() {
+  if (pollTimer) clearInterval(pollTimer)
+  pollTimer = setInterval(fetchUsers, 5000)
+}
+
 function startPolling() {
   usersLoading.value = true
   isFirstLoad = true
   knownCompletedIds.clear()
   notifications.value = []
   unreadIds.value = new Set()
+  pollingActive = true
   fetchUsers()
-  pollTimer = setInterval(fetchUsers, 5000)
+  startInterval()
 }
 
 function stopPolling() {
   if (pollTimer) clearInterval(pollTimer)
   pollTimer = null
+  pollingActive = false
   users.value = []
   notifications.value = []
   knownCompletedIds.clear()
@@ -314,6 +326,17 @@ function stopPolling() {
   isFirstLoad = true
   pollError.value = false
   highlightUserId.value = null
+}
+
+// หยุด interval ตอน tab ซ่อน, รีสตาร์ทตอน tab กลับมา — ไม่ล้าง state/notifications
+// Pause interval when tab is hidden; restart when visible — preserves state & notifications.
+function handleVisibility() {
+  if (document.hidden) {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+  } else if (pollingActive && isLoggedIn.value) {
+    fetchUsers()
+    startInterval()
+  }
 }
 
 function markAsRead(userId) {
@@ -371,10 +394,12 @@ function openProfileDetail(u) {
 }
 
 onMounted(async () => {
+  document.addEventListener('visibilitychange', handleVisibility)
   if (await tryRestoreSession()) startPolling()
 })
 
 onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibility)
   stopPolling()
   if (bellRingTimer) clearTimeout(bellRingTimer)
 })
