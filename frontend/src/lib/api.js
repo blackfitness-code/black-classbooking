@@ -54,7 +54,10 @@ export async function request(path, { method = 'GET', body, auth = true, headers
     reqHeaders['ngrok-skip-browser-warning'] = 'true'
   }
 
-  if (body !== undefined) {
+  // FormData (multipart) — ปล่อยให้ browser ตั้ง Content-Type + boundary เอง
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+
+  if (body !== undefined && !isFormData) {
     reqHeaders['Content-Type'] = 'application/json'
   }
 
@@ -68,7 +71,7 @@ export async function request(path, { method = 'GET', body, auth = true, headers
   const res = await fetch(url, {
     method,
     headers: reqHeaders,
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {})
+    ...(body !== undefined ? { body: isFormData ? body : JSON.stringify(body) } : {})
   })
 
   // Parse response body (tolerate empty body — e.g. 204 No Content)

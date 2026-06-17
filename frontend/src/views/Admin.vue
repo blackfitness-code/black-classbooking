@@ -276,6 +276,14 @@
           </div>
           <div v-if="!isStaff" class="flex items-center gap-2">
             <input ref="importFileInput" type="file" accept=".csv,text/csv" class="hidden" @change="onImportFile">
+            <input ref="crmFileInput" type="file" accept=".csv,text/csv" multiple class="hidden" @change="onCrmFiles">
+            <button @click="triggerCrmUpload" :disabled="uploadingCrm"
+              class="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50">
+              <svg class="w-4 h-4" :class="uploadingCrm && 'animate-pulse'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+              </svg>
+              {{ uploadingCrm ? 'กำลังอัปเดต...' : 'อัปเดต CRM' }}
+            </button>
             <button @click="syncMemberships" :disabled="syncing"
               class="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50">
               <svg class="w-4 h-4" :class="syncing && 'animate-spin'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1281,7 +1289,9 @@ const editingUser = ref(null)
 const savingUser = ref(false)
 const importing = ref(false)
 const syncing = ref(false)
+const uploadingCrm = ref(false)
 const importFileInput = ref(null)
+const crmFileInput = ref(null)
 
 // Booking filters
 const bookingSearch = ref('')
@@ -1866,6 +1876,33 @@ const refreshData = async () => {
   isLoading.value = true
   await Promise.all([loadAllData(true), loadCustomClassTypes()])
   isLoading.value = false
+}
+
+// ---- อัปเดตข้อมูล CRM (อัปโหลด export หลายสาขา → merge → Cloud Storage) ----
+const triggerCrmUpload = () => crmFileInput.value?.click()
+
+const onCrmFiles = async (e) => {
+  const files = Array.from(e.target.files || [])
+  e.target.value = '' // reset ให้เลือกไฟล์เดิมซ้ำได้
+  if (files.length === 0) return
+
+  uploadingCrm.value = true
+  try {
+    const fd = new FormData()
+    files.forEach((f) => fd.append('files', f))
+    const { count, files: n } = await api.post('/admin/crm/upload', fd)
+    await Swal.fire({
+      title: 'อัปเดต CRM สำเร็จ!',
+      html: `รวม ${n} ไฟล์ → <b>${count.toLocaleString()} รายชื่อ</b> (ตัดเบอร์ซ้ำแล้ว)`,
+      icon: 'success',
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#00B900',
+    })
+  } catch (err) {
+    Swal.fire({ title: 'อัปเดตไม่สำเร็จ', text: err?.code || err?.message || '', icon: 'error', confirmButtonText: 'ตกลง' })
+  } finally {
+    uploadingCrm.value = false
+  }
 }
 
 // ---- Sync membership จาก Google Sheets ----

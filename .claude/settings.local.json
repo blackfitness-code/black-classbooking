@@ -5,7 +5,8 @@
       "PowerShell(Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue; \"stopped pid $\\($_.OwningProcess\\)\" })",
       "PowerShell(Stop-Process -Id 4504 -Force)",
       "PowerShell($body = '{\"devUid\":\"Utest_b1\"}'; $authResp = Invoke-RestMethod -Uri \"http://localhost:8090/api/auth/line\" -Method POST -Body $body -ContentType \"application/json\"; $TOKEN = $authResp.accessToken; $CLASS_ID = \"8lNdfUkQn0bmnnl7tGm1\"; $bookBody = \"{`\"classId`\":`\"$CLASS_ID`\"}\"; $bookRespRaw = Invoke-WebRequest -Uri \"http://localhost:8090/api/bookings\" -Method POST -Body $bookBody -ContentType \"application/json\" -Headers @{ Authorization = \"Bearer $TOKEN\" } -UseBasicParsing -ErrorAction SilentlyContinue; Write-Host \"Step 3 HTTP Status: $\\($bookRespRaw.StatusCode\\)\"; Write-Host \"Step 3 Body: $\\($bookRespRaw.Content\\)\")",
-      "mcp__visualize__show_widget"
+      "mcp__visualize__show_widget",
+      "PowerShell(gcloud storage buckets list --project=blackcrmdev --format=\"value\\(name\\)\" 2>&1)"
     ]
   }
 }

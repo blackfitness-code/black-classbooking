@@ -32,9 +32,11 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
+import multer from 'multer';
 
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
+import { ApiError } from '../middleware/errorHandler.js';
 
 // Services
 import { listUsers, adminUpdateProfile, setRole, setMembership, setMemberType, setCooldown, deleteUser, importUsers } from '../services/admin.users.js';
@@ -44,8 +46,12 @@ import { getClassTypes, setClassTypes } from '../services/settings.js';
 import { listCheckins, deleteCheckin } from '../services/checkins.js';
 import { listClasses } from '../services/classes.js';
 import { syncAllMemberships } from '../services/membership-sync.js';
+import { publishCrm } from '../services/crm.js';
 
 const router = Router();
+
+// multipart parser สำหรับอัปโหลด CRM CSV (memory storage, สูงสุด 15MB/ไฟล์)
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
 // ---------------------------------------------------------------------------
 // Apply requireAuth to all admin routes
@@ -393,6 +399,24 @@ router.post('/memberships/sync', requireRole('admin'), async (req, res, next) =>
   try {
     const result = await syncAllMemberships();
     res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// CRM upload — admin only
+// POST /admin/crm/upload  (multipart: files[] = CSV export แต่ละสาขา)
+//   → merge + publish ขึ้น Cloud Storage → { count, files }
+// ---------------------------------------------------------------------------
+router.post('/crm/upload', requireRole('admin'), upload.array('files', 5), async (req, res, next) => {
+  try {
+    if (!req.files || req.files.length < 1) {
+      throw new ApiError(400, 'ต้องอัปโหลดอย่างน้อย 1 ไฟล์', 'NO_FILES');
+    }
+    const texts = req.files.map((f) => f.buffer.toString('utf8'));
+    const { count } = await publishCrm(texts);
+    res.json({ count, files: req.files.length });
   } catch (err) {
     next(err);
   }
