@@ -1,0 +1,59 @@
+# cloudbuild.yaml — build backend Docker image แล้ว deploy ขึ้น Cloud Run
+# ใช้กับ Cloud Build trigger (push branch production → build+deploy อัตโนมัติ)
+#
+# จุดสำคัญ: build context = backend/ (ไม่ใช่ repo root) ให้ตรงกับ Dockerfile
+# ที่ COPY package.json/src จากโฟลเดอร์ backend. NODE_ENV=production ถูกฝังใน
+# Dockerfile แล้ว จึงไม่ต้องตั้งซ้ำที่นี่.
+
+substitutions:
+  _REGION: asia-southeast1
+  _REPO: backend                       # ชื่อ Artifact Registry repo (สร้างไว้ครั้งเดียว)
+  _SERVICE: black-classbooking-backend
+  _RUNTIME_SA: bcb-backend             # ชื่อ service account ที่ติดให้ Cloud Run (มี roles/datastore.user)
+  _CORS_ORIGIN: https://blackyoga-2748c.web.app
+
+steps:
+  # 1) Build image — context = backend/, Dockerfile = backend/Dockerfile
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
+      - -f
+      - backend/Dockerfile
+      - backend
+
+  # 2) Push ทั้งสอง tag
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}
+
+  # 3) Deploy ขึ้น Cloud Run
+  #    - env ที่ไม่ลับ ตั้งตรงนี้ (NODE_ENV ฝังใน image แล้วไม่ต้องใส่)
+  #    - JWT_SECRET ดึงจาก Secret Manager (ไม่เก็บใน repo)
+  #    - service account ติดให้ → Firestore ใช้ ADC ไม่ต้องมี key
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - --region=${_REGION}
+      - --service-account=${_RUNTIME_SA}@$PROJECT_ID.iam.gserviceaccount.com
+      - --allow-unauthenticated
+      - --port=8080
+      - --set-env-vars=FIREBASE_PROJECT_ID=$PROJECT_ID,LINE_CHANNEL_ID=2007882550,CORS_ORIGIN=${_CORS_ORIGIN}
+      - --update-secrets=JWT_SECRET=jwt-secret:latest
+      - --quiet
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY

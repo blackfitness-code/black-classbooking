@@ -1,131 +1,21 @@
 rules_version = '2';
+
+// ============================================================================
+// DENY-ALL — ลูกค้า (client / browser) เข้าถึง Firestore ตรงไม่ได้เลย
+//
+// สถาปัตยกรรมใหม่: frontend → backend (Express + Firebase Admin SDK) → Firestore
+// ทุก read/write ผ่าน backend ที่ถือ service account เท่านั้น.
+// Admin SDK ทำงานด้วย privileged credential ซึ่ง "ข้าม" security rules เหล่านี้
+// rules จึงปฏิเสธทุกอย่างจากฝั่ง client ได้อย่างปลอดภัย (auth/role/business logic
+// บังคับที่ backend แล้ว).
+//
+// deploy ขึ้นทั้ง prod (blackyoga-2748c) และ dev (blackcrmdev) — ผู้ใช้เลือกให้
+// dev mirror prod (รับทราบว่าจะกระทบแอป CRM ที่แชร์ blackcrmdev ถ้ามันเข้า Firestore ตรง).
+// ============================================================================
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    function getUserRole(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role;
-    }
-
-    function isAdmin() {
-      return isAuthenticated() && getUserRole(request.auth.uid) in ['admin'];
-    }
-
-    function isStaffOrAdmin() {
-      return isAuthenticated() && getUserRole(request.auth.uid) in ['admin', 'staff'];
-    }
-
-    function isMembershipValid() {
-      let user = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return user.membershipExpiry != null && user.membershipExpiry > request.time;
-    }
-
-    // Users collection
-    match /users/{userId} {
-      // อ่านได้เฉพาะตัวเอง หรือ staff/admin
-      allow read: if isOwner(userId) || isStaffOrAdmin();
-
-      // สร้าง user ใหม่ได้ (LINE LIFF registration)
-      allow create: if isOwner(userId)
-                    && request.resource.data.role == 'user'
-                    && request.resource.data.lineUserId == userId;
-
-      // Admin สร้าง/import user ได้ (role ใดก็ได้)
-      allow create: if isAdmin();
-
-      // แก้ไขได้เฉพาะตัวเอง (แต่ห้ามแก้ role, membershipExpiry, cooldownUntil)
-      allow update: if isOwner(userId)
-                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'membershipExpiry', 'cooldownUntil']);
-
-      // Admin แก้ไข membership/role/cooldown ได้
-      allow update: if isAdmin();
-
-      // Admin ลบ user ได้
-      allow delete: if isAdmin();
-    }
-
-    // Classes collection
-    match /classes/{classId} {
-      // อ่านได้ทุกคน
-      allow read: if true;
-
-      // เขียนได้เฉพาะ admin
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin();
-
-      // ผู้ใช้ที่ล็อกอินปรับได้เฉพาะ currentBookings (ตอนจอง/ยกเลิก)
-      // ทีละ ±1 และต้องอยู่ในช่วง 0..maxCapacity — กันแก้ field อื่นหรือกระโดดเลข
-      allow update: if isAuthenticated()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentBookings'])
-                    && request.resource.data.currentBookings is int
-                    && request.resource.data.currentBookings >= 0
-                    && request.resource.data.currentBookings <= resource.data.maxCapacity
-                    && (request.resource.data.currentBookings == resource.data.currentBookings + 1
-                        || request.resource.data.currentBookings == resource.data.currentBookings - 1);
-    }
-
-    // Bookings collection
-    match /bookings/{bookingId} {
-      // อ่านได้เฉพาะเจ้าของ หรือ staff/admin
-      allow read: if isAuthenticated()
-                  && (resource.data.userId == request.auth.uid || isStaffOrAdmin());
-
-      // สร้างการจองได้ถ้า:
-      // - เป็นเจ้าของ
-      // - membership ยังไม่หมดอายุ
-      // - status = confirmed
-      allow create: if isAuthenticated()
-                    && request.resource.data.userId == request.auth.uid
-                    && isMembershipValid()
-                    && request.resource.data.status == 'confirmed';
-
-      // Admin/Staff จองแทน user คนอื่นได้
-      allow create: if isStaffOrAdmin();
-
-      // ยกเลิกได้เฉพาะเจ้าของ (เปลี่ยน status เป็น cancelled)
-      allow update: if isAuthenticated()
-                    && resource.data.userId == request.auth.uid
-                    && request.resource.data.status == 'cancelled'
-                    && resource.data.status == 'confirmed';
-
-      // Admin/Staff อัปเดตได้ทุกอย่าง
-      allow update: if isStaffOrAdmin();
-
-      // ห้ามลบ
-      allow delete: if false;
-    }
-
-    // Check-ins collection
-    match /checkins/{checkinId} {
-      // อ่านได้เฉพาะเจ้าของ หรือ staff/admin
-      allow read: if isAuthenticated()
-                  && (resource.data.userId == request.auth.uid || isStaffOrAdmin());
-
-      // สร้างได้เฉพาะ staff/admin
-      allow create: if isStaffOrAdmin();
-
-      // staff/admin ลบ check-in ได้
-      allow delete: if isStaffOrAdmin();
-
-      // ห้ามแก้ไข (check-in เป็น record ที่ไม่ควรถูกแก้)
-      allow update: if false;
-    }
-
-    // Settings collection
-    match /settings/{document} {
-      // อ่านได้ทุกคน
-      allow read: if true;
-
-      // เขียนได้เฉพาะ admin
-      allow write: if isAdmin();
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

@@ -4,20 +4,38 @@ node_modules/
 package-lock.json
 yarn.lock
 
-# Environment variables
+# Environment variables — ignore real values, keep *.example committed
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-client/.env
-client/.env.production
-server/.env
-server/.env.production
+# frontend (real values gitignored; .env.*.example are committed templates)
+frontend/.env
+frontend/.env.development
+frontend/.env.production
+# backend (real values gitignored; .env.*.example are committed templates)
+backend/.env
+backend/.env.development
+backend/.env.production
+# dashboard (desktop admin web)
+dashboard/.env
+dashboard/.env.development
+dashboard/.env.production
+.cursor/
+# but never ignore the committed templates
+!**/*.example
+
+# Backend secrets (Firebase service account, never commit)
+backend/serviceAccount.json
+**/serviceAccount*.json
+**/*firebase-adminsdk*.json
+**/*-adminsdk-*.json
 
 # Build outputs
-client/dist/
-client/build/
+frontend/dist/
+frontend/build/
+backend/build/
 server/build/
 build/
 dist/
