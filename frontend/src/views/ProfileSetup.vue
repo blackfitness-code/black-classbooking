@@ -9,23 +9,13 @@
         <h1 class="text-xl font-bold text-center">ตั้งค่าโปรไฟล์</h1>
         <p class="text-sm text-white/80 text-center mt-1">กรอกข้อมูลเพื่อเริ่มจองคลาส</p>
 
-        <div class="flex flex-col items-center mt-6">
-          <div class="relative">
-            <img
-              v-if="profilePictureUrl"
-              :src="profilePictureUrl"
-              :alt="liffStore.profile?.displayName"
-              class="w-20 h-20 rounded-2xl object-cover ring-4 ring-white/30 shadow-lg"
-              @error="onImageError"
-            >
-            <div v-else class="w-20 h-20 rounded-2xl bg-white/15 flex items-center justify-center ring-4 ring-white/20">
-              <svg class="w-10 h-10 text-white/80" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-              </svg>
-            </div>
+        <!-- Step indicator -->
+        <div class="flex items-center gap-2 mt-5 max-w-[180px] mx-auto">
+          <div class="flex items-center justify-center w-7 h-7 rounded-full bg-white/30 text-white text-xs font-bold shrink-0">1</div>
+          <div class="h-0.5 flex-1 bg-white/30 rounded-full">
+            <div class="h-full w-full bg-white rounded-full"></div>
           </div>
-          <p class="mt-3 font-semibold">{{ liffStore.profile?.displayName }}</p>
-          <p class="text-xs text-white/70">ยินดีต้อนรับ 👋</p>
+          <div class="flex items-center justify-center w-7 h-7 rounded-full bg-white text-primary text-xs font-bold shrink-0">2</div>
         </div>
       </div>
     </header>
@@ -140,9 +130,13 @@
               <label class="block text-sm font-medium text-gray-700 mb-1.5">วันเกิด</label>
               <input
                 v-model="form.birthDate"
-                type="date"
-                :class="inputClass('birthDate')"
+                type="text"
+                inputmode="numeric"
+                maxlength="10"
+                placeholder="dd/mm/yyyy"
+                :class="[inputClass('birthDate'), 'tracking-widest']"
               >
+              <p v-if="errors.birthDate" class="text-red-500 text-xs mt-1.5">{{ errors.birthDate }}</p>
             </div>
 
             <div>
@@ -311,7 +305,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, computed } from 'vue'
+import { ref, reactive, watch, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLiffStore } from '../stores/liff'
 import { useAuthStore } from '../stores/auth'
@@ -417,6 +411,73 @@ const form = reactive({
   },
   acceptTerms: false,
   acceptRisk: false
+})
+
+// แปลง dd-mm-yyyy (จาก CRM) → dd/mm/yyyy (สำหรับแสดงใน input)
+const parseCrmDate = (dmy) => {
+  if (!dmy || dmy === '-') return ''
+  const [d, m, y] = dmy.split('-')
+  if (!d || !m || !y) return ''
+  return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`
+}
+
+// auto-format dd/mm/yyyy ระหว่างพิมพ์
+const formatBirthDate = (val) => {
+  const digits = (val || '').replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+}
+
+// แปลง dd/mm/yyyy → yyyy-mm-dd สำหรับส่ง backend
+const birthDateToISO = (val) => {
+  const digits = (val || '').replace(/\D/g, '')
+  if (digits.length !== 8) return ''
+  const d = digits.slice(0, 2), m = digits.slice(2, 4), y = digits.slice(4, 8)
+  return `${y}-${m}-${d}`
+}
+
+const isValidBirthDate = (val) => {
+  const digits = (val || '').replace(/\D/g, '')
+  if (digits.length !== 8) return false
+  const d = parseInt(digits.slice(0, 2)), m = parseInt(digits.slice(2, 4)), y = parseInt(digits.slice(4, 8))
+  if (m < 1 || m > 12 || d < 1 || d > 31) return false
+  if (y < 1900 || y > new Date().getFullYear()) return false
+  return true
+}
+
+onMounted(() => {
+  const phone = sessionStorage.getItem('prefill_phone')
+  const crmRaw = sessionStorage.getItem('prefill_crm')
+
+  // ลบทันทีหลังอ่าน ป้องกันค้างข้าม session
+  sessionStorage.removeItem('prefill_phone')
+  sessionStorage.removeItem('prefill_crm')
+
+  if (phone) {
+    form.phone = formatThaiPhone(phone)
+  }
+
+  if (crmRaw) {
+    try {
+      const crm = JSON.parse(crmRaw)
+
+      // ใช้ nextTick เพื่อให้ watchers ที่ validate ทำงานหลัง reactive ตั้งค่าเสร็จ
+      nextTick(() => {
+        if (crm.firstName)  form.firstName  = crm.firstName.trim()
+        if (crm.lastName)   form.lastName   = crm.lastName.trim()
+        if (crm.nickname)   form.nickname   = crm.nickname.trim()
+        if (crm.nationalId) form.nationalId = crm.nationalId.replace(/\D/g, '').slice(0, 13)
+        if (crm.email && crm.email !== '-') form.email = crm.email.trim()
+        if (crm.dob)        form.birthDate  = parseCrmDate(crm.dob)
+        if (crm.gender && ['male', 'female', 'other'].includes(crm.gender)) {
+          form.gender = crm.gender
+        }
+      })
+    } catch {
+      // ignore parse error
+    }
+  }
 })
 
 // อนุญาตเฉพาะอักษรไทย + เว้นวรรค
@@ -588,6 +649,19 @@ watch(() => form.phone, (val) => {
   validateField('phone')
 })
 
+watch(() => form.birthDate, (val) => {
+  const formatted = formatBirthDate(val)
+  if (formatted !== val) {
+    form.birthDate = formatted
+    return
+  }
+  if (val.replace(/\D/g, '').length === 8 && !isValidBirthDate(val)) {
+    errors.value.birthDate = 'วันเกิดไม่ถูกต้อง'
+  } else {
+    delete errors.value.birthDate
+  }
+})
+
 watch(() => form.emergencyContact.phone, (val) => {
   const formatted = formatThaiPhone(val)
   if (formatted !== val) {
@@ -644,7 +718,7 @@ const submitProfile = async () => {
       lastName: form.lastName.trim(),
       nationalId: form.nationalId.trim(),
       phone: phoneDigits(form.phone),
-      birthDate: form.birthDate,
+      birthDate: birthDateToISO(form.birthDate),
       gender: form.gender,
       healthIssues: form.healthIssues.trim(),
       emergencyContact: form.emergencyContact.hasContact ? {

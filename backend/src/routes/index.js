@@ -22,6 +22,9 @@ import checkinsRouter from './checkins.routes.js';
 // Phase 3: Admin operations
 import adminRouter from './admin.routes.js';
 
+// CRM lookup (prefill on registration)
+import crmRouter from './crm.routes.js';
+
 const router = Router();
 
 // ---------------------------------------------------------------------------
@@ -70,5 +73,10 @@ router.use('/checkins', checkinsRouter);
 // Phase 3: Admin operations (requireAuth + requireRole applied inside router)
 // ---------------------------------------------------------------------------
 router.use('/admin', adminRouter);
+
+// ---------------------------------------------------------------------------
+// CRM: phone lookup for registration prefill (no auth required)
+// ---------------------------------------------------------------------------
+router.use('/crm', crmRouter);
 
 export default router;

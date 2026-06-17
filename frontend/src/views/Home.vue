@@ -351,7 +351,7 @@ const goToProfileSetup = async () => {
       liffStore.profile.pictureUrl
     )
   }
-  router.push('/profile-setup')
+  router.push('/phone-lookup')
 }
 
 // Watch for LIFF becoming ready then auto-authenticate (replaces recursive setTimeout)
@@ -364,6 +364,10 @@ watch(
       liffStore.profile.displayName,
       liffStore.profile.pictureUrl
     )
+    // ผู้ใช้ใหม่ (ยังไม่เจอใน DB / ยังไม่ตั้งโปรไฟล์) → เด้งเข้า phone-lookup ทันที
+    if (authStore.isAuthenticated && authStore.needsProfileSetup) {
+      router.replace('/phone-lookup')
+    }
   },
   { immediate: true }
 )

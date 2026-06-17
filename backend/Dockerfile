@@ -23,6 +23,7 @@ RUN npm install --omit=dev
 
 # Copy application source
 COPY src ./src
+COPY crm-data ./crm-data
 
 # Expose the port (overridable via PORT env at runtime)
 EXPOSE 8080

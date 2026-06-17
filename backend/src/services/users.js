@@ -7,8 +7,9 @@
 
 import { db, admin } from '../config/firebase.js';
 import { ApiError } from '../middleware/errorHandler.js';
+import { lookupMembership } from './membership-sheets.js';
 
-const { FieldValue } = admin.firestore;
+const { FieldValue, Timestamp } = admin.firestore;
 
 // ---------------------------------------------------------------------------
 // Helper: serialize Timestamp fields ให้เป็น ISO string
@@ -112,6 +113,7 @@ export async function upsertUserIdentity({ lineUserId, displayName, pictureUrl }
 // Fields ที่ client ห้ามแก้เอง — server/admin controlled เท่านั้น
 const PROTECTED_FIELDS = new Set([
   'role',
+  'memberType',        // server ตั้งเองจาก Google Sheets — client ห้ามปลอม
   'membershipExpiry',
   'cooldownUntil',
   'lineUserId',
@@ -144,11 +146,29 @@ export async function updateProfile(lineUserId, profileData) {
     throw new ApiError(404, 'User not found', 'USER_NOT_FOUND');
   }
 
-  const wasCompleted = snap.data().profileCompleted === true;
+  const existing = snap.data();
+  const wasCompleted = existing.profileCompleted === true;
   safeData.profileCompleted = true;
   safeData.updatedAt = FieldValue.serverTimestamp();
   if (!wasCompleted) {
     safeData.profileCompletedAt = FieldValue.serverTimestamp();
+  }
+
+  // --- Membership lookup จาก Google Sheets (best-effort — ห้ามทำให้ save fail) ---
+  try {
+    const nickname = safeData.nickname ?? existing.nickname;
+    const firstName = safeData.firstName ?? existing.firstName;
+    const membership = await lookupMembership(nickname, firstName);
+    if (membership) {
+      safeData.memberType = membership.memberType;
+      safeData.membershipExpiry = Timestamp.fromDate(membership.membershipExpiry);
+      console.log(
+        `[users] membership matched: ${nickname}/${firstName} → ${membership.memberType} ` +
+        `(${membership.rawPackage}) exp=${membership.membershipExpiry.toISOString().slice(0, 10)}`
+      );
+    }
+  } catch (err) {
+    console.warn(`[users] membership lookup failed (continuing): ${err.message}`);
   }
 
   await docRef.update(safeData);

@@ -43,6 +43,7 @@ import { listAllBookings, adminCreateBooking, adminUpdateBookingStatus } from '.
 import { getClassTypes, setClassTypes } from '../services/settings.js';
 import { listCheckins, deleteCheckin } from '../services/checkins.js';
 import { listClasses } from '../services/classes.js';
+import { syncAllMemberships } from '../services/membership-sync.js';
 
 const router = Router();
 
@@ -383,6 +384,19 @@ router.put(
     }
   },
 );
+
+// ---------------------------------------------------------------------------
+// Membership sync — admin only
+// POST /admin/memberships/sync → ดึง sheet ล่าสุดแล้วอัปเดต user ทั้งหมด
+// ---------------------------------------------------------------------------
+router.post('/memberships/sync', requireRole('admin'), async (req, res, next) => {
+  try {
+    const result = await syncAllMemberships();
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Settings — admin only

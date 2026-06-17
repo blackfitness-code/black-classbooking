@@ -276,6 +276,13 @@
           </div>
           <div v-if="!isStaff" class="flex items-center gap-2">
             <input ref="importFileInput" type="file" accept=".csv,text/csv" class="hidden" @change="onImportFile">
+            <button @click="syncMemberships" :disabled="syncing"
+              class="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50">
+              <svg class="w-4 h-4" :class="syncing && 'animate-spin'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              {{ syncing ? 'กำลัง Sync...' : 'Sync แพ็กเกจ' }}
+            </button>
             <button @click="triggerImport" :disabled="importing"
               class="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50">
               <svg class="w-4 h-4" :class="importing && 'animate-pulse'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1273,6 +1280,7 @@ const showEditUserModal = ref(false)
 const editingUser = ref(null)
 const savingUser = ref(false)
 const importing = ref(false)
+const syncing = ref(false)
 const importFileInput = ref(null)
 
 // Booking filters
@@ -1858,6 +1866,37 @@ const refreshData = async () => {
   isLoading.value = true
   await Promise.all([loadAllData(true), loadCustomClassTypes()])
   isLoading.value = false
+}
+
+// ---- Sync membership จาก Google Sheets ----
+const syncMemberships = async () => {
+  const confirm = await Swal.fire({
+    title: 'Sync แพ็กเกจจาก Sheets?',
+    text: 'ดึงข้อมูลล่าสุดจาก Google Sheets มาอัปเดต memberType และวันหมดอายุของสมาชิกทั้งหมด',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sync เลย',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#00B900',
+  })
+  if (!confirm.isConfirmed) return
+
+  syncing.value = true
+  try {
+    const { scanned, matched, updated } = await api.post('/admin/memberships/sync')
+    await Swal.fire({
+      title: 'Sync สำเร็จ!',
+      html: `ตรวจสอบ ${scanned} คน · พบใน Sheet ${matched} คน · <b>อัปเดต ${updated} คน</b>`,
+      icon: 'success',
+      confirmButtonText: 'ตกลง',
+      confirmButtonColor: '#00B900',
+    })
+    await refreshData()
+  } catch (e) {
+    Swal.fire({ title: 'Sync ไม่สำเร็จ', text: e?.code || e?.message || '', icon: 'error', confirmButtonText: 'ตกลง' })
+  } finally {
+    syncing.value = false
+  }
 }
 
 // ---- Class CRUD ----

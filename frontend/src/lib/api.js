@@ -82,8 +82,10 @@ export async function request(path, { method = 'GET', body, auth = true, headers
     }
   }
 
-  // Phase 1: on 401 ให้ลอง refresh token แล้ว retry ครั้งเดียว
-  if (res.status === 401 && !_isRetry && auth) {
+  // on 401 (token หมดอายุ) หรือ 403 (role ใน token เก่า/เปลี่ยนหลัง login)
+  // ให้ลอง refresh token แล้ว retry ครั้งเดียว — refresh จะ re-read role ล่าสุดจาก DB
+  // ถ้า 403 เพราะไม่มีสิทธิ์จริง retry จะได้ 403 ซ้ำแล้ว throw ตามปกติ (token ไม่ถูกล้าง)
+  if ((res.status === 401 || res.status === 403) && !_isRetry && auth) {
     const storedRefresh = getRefreshToken()
     if (storedRefresh) {
       try {

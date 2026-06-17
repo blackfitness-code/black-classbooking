@@ -8,6 +8,12 @@ const routes = [
         component: () => import('../views/Home.vue')
     },
     {
+        path: '/phone-lookup',
+        name: 'PhoneLookup',
+        component: () => import('../views/PhoneLookup.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
         path: '/profile-setup',
         name: 'ProfileSetup',
         component: () => import('../views/ProfileSetup.vue'),
@@ -57,13 +63,12 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
     const authStore = useAuthStore()
 
-    // ถ้าไปหน้า profile-setup ให้ผ่านได้ถ้ามี needsProfileSetup
-    if (to.path === '/profile-setup') {
-        if (authStore.needsProfileSetup || authStore.isAuthenticated) {
+    // phone-lookup และ profile-setup: ผ่านได้ถ้า login แล้ว
+    if (to.path === '/phone-lookup' || to.path === '/profile-setup') {
+        if (authStore.isAuthenticated) {
             next()
             return
         }
-        // ถ้าไม่มี needsProfileSetup และไม่ได้ login ให้กลับไปหน้าแรก
         next('/')
         return
     }
@@ -73,8 +78,9 @@ router.beforeEach((to, from, next) => {
         return
     }
 
+    // ถ้ายังไม่ setup profile ให้ไปหน้า phone-lookup ก่อนเสมอ
     if (to.meta.requiresProfile && authStore.needsProfileSetup) {
-        next('/profile-setup')
+        next('/phone-lookup')
         return
     }
 
