@@ -156,21 +156,17 @@ export async function createBooking(uid, classId) {
   if (pastSameClassBookings.length > 0) {
     const lastBooking = pastSameClassBookings[0];
 
-    // ตรวจว่ามี check-in สำหรับ booking ล่าสุดนั้นไหม
-    // — ตรวจทั้ง bookingId และ uid+classId เพราะ checkin เก่าอาจไม่มี bookingId
     const [byBookingId, byUidClass] = await Promise.all([
       db.collection('checkins').where('bookingId', '==', lastBooking.id).limit(1).get(),
       db.collection('checkins').where('uid', '==', uid).where('classId', '==', lastBooking.classId).limit(1).get(),
     ]);
 
     if (byBookingId.empty && byUidClass.empty) {
-      // No-show! ตรวจว่า class นี้คือ "รอบถัดไปรอบแรก" หลัง no-show ไหม
-      // โดยหา classes ที่ชื่อเดียวกัน date > lastBooking.date เรียงจากน้อยไปมาก
       const futureClassesSnap = await db.collection('classes').get();
       const nextClassAfterNoShow = futureClassesSnap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
         .filter((c) => c.name === cls.name && c.date > lastBooking.date)
-        .sort((a, b) => a.date.localeCompare(b.date))[0]; // รอบแรกสุดหลัง no-show
+        .sort((a, b) => a.date.localeCompare(b.date))[0];
 
       if (nextClassAfterNoShow && nextClassAfterNoShow.id === classId) {
         throw new ApiError(
