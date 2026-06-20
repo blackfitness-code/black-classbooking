@@ -64,7 +64,7 @@ export async function listMyBookings(uid) {
  *  3. not in cooldown (cooldownUntil <= now or null)
  *  4. memberType !== 'gold'
  *  5. class exists
- *  6. time window: (classDateTime - now) > 30min AND <= 14days
+ *  6. time window: (classDateTime - now) > 30min AND <= 7days
  *  7. no existing CONFIRMED booking for same classId by this user
  *
  * In transaction:
@@ -123,9 +123,9 @@ export async function createBooking(uid, classId) {
   const classDateTime = new Date(`${cls.date}T${cls.time}:00`);
   const diffMs = classDateTime - now;
   const THIRTY_MIN = 30 * 60 * 1000;
-  const FOURTEEN_DAYS = 14 * 24 * 60 * 60 * 1000;
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
-  if (diffMs <= THIRTY_MIN || diffMs > FOURTEEN_DAYS) {
+  if (diffMs <= THIRTY_MIN || diffMs > SEVEN_DAYS) {
     throw new ApiError(400, 'Booking window is closed for this class', 'BOOKING_WINDOW_CLOSED');
   }
 
