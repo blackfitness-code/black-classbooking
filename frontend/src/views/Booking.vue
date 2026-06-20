@@ -251,7 +251,7 @@ const booking = ref(false)
 
 const availableDates = computed(() => {
   const dates = []
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 7; i++) {
     const date = addDays(new Date(), i)
     dates.push({
       dateString: format(date, 'yyyy-MM-dd'),
@@ -284,7 +284,7 @@ const canBook = (yogaClass) => {
 
   const classDateTime = new Date(`${yogaClass.date}T${yogaClass.time}:00`)
   const minutesDiff = (classDateTime - new Date()) / (1000 * 60)
-  return minutesDiff > 30 && minutesDiff <= (14 * 24 * 60)
+  return minutesDiff > 30 && minutesDiff <= (7 * 24 * 60)
 }
 
 const getBookingButtonText = (yogaClass) => {
@@ -307,7 +307,7 @@ const getBookingButtonText = (yogaClass) => {
 
   if (minutesDiff <= 0) return 'คลาสเริ่มแล้ว'
   if (minutesDiff <= 30) return 'ปิดรับจองแล้ว (จองได้ก่อนคลาส 30 นาที)'
-  if (minutesDiff > (14 * 24 * 60)) return 'ยังไม่เปิดรับจอง'
+  if (minutesDiff > (7 * 24 * 60)) return 'ยังไม่เปิดรับจอง'
   return 'จองคลาส'
 }
 
@@ -376,7 +376,8 @@ const confirmBooking = async () => {
       MEMBERSHIP_EXPIRED: 'สมาชิกหมดอายุ',
       IN_COOLDOWN: 'ถูกระงับการจองชั่วคราว',
       GOLD_NOT_ALLOWED: 'แพ็คเกจ Gold ไม่สามารถจองได้',
-      BOOKING_WINDOW_CLOSED: 'อยู่นอกช่วงเวลาที่จองได้'
+      BOOKING_WINDOW_CLOSED: 'อยู่นอกช่วงเวลาที่จองได้',
+      NO_SHOW_BLOCKED: 'คุณไม่ได้เช็คอินคลาสที่แล้ว จึงไม่สามารถจองคลาสนี้ได้ (1 รอบ)'
     }
     Swal.fire({
       title: 'เกิดข้อผิดพลาด!',
