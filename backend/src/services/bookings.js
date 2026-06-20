@@ -129,21 +129,57 @@ export async function createBooking(uid, classId) {
     throw new ApiError(400, 'Booking window is closed for this class', 'BOOKING_WINDOW_CLOSED');
   }
 
-  // 5. Dup check: existing CONFIRMED booking by this user for same classId
-  // query แค่ userId (single-field index อัตโนมัติ) แล้ว filter ใน memory —
-  // เลี่ยงการต้องสร้าง composite index (userId+classId+status)
+  // 5. Dup check + No-show check: query userId (single-field index) แล้ว filter ใน memory
+  const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+
   const userBookingsSnap = await db
     .collection('bookings')
     .where('userId', '==', uid)
     .get();
 
-  const hasConfirmedDup = userBookingsSnap.docs.some((d) => {
-    const b = d.data();
-    return b.classId === classId && b.status === 'confirmed';
-  });
+  const allUserBookings = userBookingsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
+  // 5a. Dup check
+  const hasConfirmedDup = allUserBookings.some(
+    (b) => b.classId === classId && b.status === 'confirmed',
+  );
   if (hasConfirmedDup) {
     throw new ApiError(409, 'Already booked this class', 'ALREADY_BOOKED');
+  }
+
+  // 5b. No-show block: หา booking ล่าสุดของคลาสชื่อเดียวกันที่ผ่านมาแล้ว (date < today)
+  //     ถ้าไม่มี check-in สำหรับ booking นั้น และคลาสที่จะจองนี้คือรอบแรกหลัง no-show → block
+  const pastSameClassBookings = allUserBookings
+    .filter((b) => b.className === cls.name && b.status !== 'cancelled' && b.date < today)
+    .sort((a, b) => b.date.localeCompare(a.date)); // ล่าสุดก่อน
+
+  if (pastSameClassBookings.length > 0) {
+    const lastBooking = pastSameClassBookings[0];
+
+    // ตรวจว่ามี check-in สำหรับ booking ล่าสุดนั้นไหม
+    const checkinSnap = await db
+      .collection('checkins')
+      .where('bookingId', '==', lastBooking.id)
+      .limit(1)
+      .get();
+
+    if (checkinSnap.empty) {
+      // No-show! ตรวจว่า class นี้คือ "รอบถัดไปรอบแรก" หลัง no-show ไหม
+      // โดยหา classes ที่ชื่อเดียวกัน date > lastBooking.date เรียงจากน้อยไปมาก
+      const futureClassesSnap = await db.collection('classes').get();
+      const nextClassAfterNoShow = futureClassesSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((c) => c.name === cls.name && c.date > lastBooking.date)
+        .sort((a, b) => a.date.localeCompare(b.date))[0]; // รอบแรกสุดหลัง no-show
+
+      if (nextClassAfterNoShow && nextClassAfterNoShow.id === classId) {
+        throw new ApiError(
+          403,
+          'You missed your last class without check-in. You cannot book the next occurrence.',
+          'NO_SHOW_BLOCKED',
+        );
+      }
+    }
   }
 
   // --- Transaction: re-check capacity + create booking + increment ---

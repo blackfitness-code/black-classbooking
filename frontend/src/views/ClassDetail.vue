@@ -430,7 +430,8 @@ const confirmBooking = async () => {
       MEMBERSHIP_EXPIRED: 'สมาชิกหมดอายุ',
       IN_COOLDOWN: 'ถูกระงับการจองชั่วคราว',
       GOLD_NOT_ALLOWED: 'แพ็คเกจ Gold ไม่สามารถจองได้',
-      BOOKING_WINDOW_CLOSED: 'อยู่นอกช่วงเวลาที่จองได้'
+      BOOKING_WINDOW_CLOSED: 'อยู่นอกช่วงเวลาที่จองได้',
+      NO_SHOW_BLOCKED: 'คุณไม่ได้เช็คอินคลาสที่แล้ว จึงไม่สามารถจองคลาสนี้ได้ (1 รอบ)'
     }
     Swal.fire({
       title: 'เกิดข้อผิดพลาด!',
