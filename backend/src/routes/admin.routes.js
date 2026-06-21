@@ -393,11 +393,21 @@ router.put(
 
 // ---------------------------------------------------------------------------
 // Membership sync — admin only
-// POST /admin/memberships/sync → ดึง sheet ล่าสุดแล้วอัปเดต user ทั้งหมด
+// GET  /admin/memberships/sync/preview → ดูก่อนว่าจะแก้ใคร/อะไร (ไม่เขียน)
+// POST /admin/memberships/sync         → แก้จริง
 // ---------------------------------------------------------------------------
+router.get('/memberships/sync/preview', requireRole('admin'), async (req, res, next) => {
+  try {
+    const result = await syncAllMemberships({ dry: true });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/memberships/sync', requireRole('admin'), async (req, res, next) => {
   try {
-    const result = await syncAllMemberships();
+    const result = await syncAllMemberships({ dry: false });
     res.json(result);
   } catch (err) {
     next(err);

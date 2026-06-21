@@ -1907,23 +1907,66 @@ const onCrmFiles = async (e) => {
 
 // ---- Sync membership จาก Google Sheets ----
 const syncMemberships = async () => {
-  const confirm = await Swal.fire({
-    title: 'Sync แพ็กเกจจาก Sheets?',
-    text: 'ดึงข้อมูลล่าสุดจาก Google Sheets มาอัปเดต memberType และวันหมดอายุของสมาชิกทั้งหมด',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'Sync เลย',
-    cancelButtonText: 'ยกเลิก',
-    confirmButtonColor: '#00B900',
-  })
-  if (!confirm.isConfirmed) return
-
   syncing.value = true
   try {
-    const { scanned, matched, updated } = await api.post('/admin/memberships/sync')
+    // 1. Preview — ดูก่อนว่าจะแก้ใคร
+    const { scanned, matched, updated, changes } = await api.get('/admin/memberships/sync/preview')
+
+    if (updated === 0) {
+      await Swal.fire({
+        title: 'ไม่มีการเปลี่ยนแปลง',
+        html: `ตรวจสอบ ${scanned} คน · พบใน Sheet ${matched} คน · ข้อมูลทุกคนเป็นปัจจุบันแล้ว`,
+        icon: 'info',
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#00B900',
+      })
+      return
+    }
+
+    // สร้างตาราง preview
+    const rows = changes.map(c => `
+      <tr style="border-bottom:1px solid #f3f4f6">
+        <td style="padding:6px 8px;text-align:left;font-weight:600">${c.name}</td>
+        <td style="padding:6px 8px;text-align:center;color:#6b7280;font-size:12px">
+          ${c.from.memberType || '-'}<br><span style="font-size:11px">${c.from.membershipExpiry || '-'}</span>
+        </td>
+        <td style="padding:6px 4px;color:#9ca3af">→</td>
+        <td style="padding:6px 8px;text-align:center;color:#059669;font-size:12px">
+          ${c.to.memberType}<br><span style="font-size:11px">${c.to.membershipExpiry}</span>
+        </td>
+      </tr>`).join('')
+
+    const preview = await Swal.fire({
+      title: `จะอัปเดต ${updated} คน`,
+      html: `
+        <p style="font-size:13px;color:#6b7280;margin-bottom:12px">ตรวจสอบ ${scanned} คน · พบใน Sheet ${matched} คน</p>
+        <div style="max-height:280px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead style="background:#f9fafb;position:sticky;top:0">
+              <tr>
+                <th style="padding:8px;text-align:left">ชื่อ</th>
+                <th style="padding:8px">เดิม</th>
+                <th></th>
+                <th style="padding:8px">ใหม่</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'ยืนยัน Sync',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#00B900',
+      width: 520,
+    })
+    if (!preview.isConfirmed) return
+
+    // 2. Sync จริง
+    const result = await api.post('/admin/memberships/sync')
     await Swal.fire({
       title: 'Sync สำเร็จ!',
-      html: `ตรวจสอบ ${scanned} คน · พบใน Sheet ${matched} คน · <b>อัปเดต ${updated} คน</b>`,
+      html: `อัปเดตแล้ว <b>${result.updated} คน</b>`,
       icon: 'success',
       confirmButtonText: 'ตกลง',
       confirmButtonColor: '#00B900',

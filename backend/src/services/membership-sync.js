@@ -12,10 +12,11 @@ import { lookupMembership, refreshCache } from './membership-sheets.js';
 const { FieldValue, Timestamp } = admin.firestore;
 
 /**
- * @returns {Promise<{ scanned: number, matched: number, updated: number }>}
+ * dry=true  → คำนวณว่าจะแก้ใคร/อะไร แต่ไม่เขียน Firestore
+ * dry=false → แก้จริง
+ * @returns {Promise<{ scanned, matched, updated, changes: Array }>}
  */
-export async function syncAllMemberships() {
-  // บังคับดึง sheet ใหม่ (ข้าม cache 10 นาที) ให้ได้ข้อมูลล่าสุดเสมอ
+export async function syncAllMemberships({ dry = false } = {}) {
   await refreshCache();
 
   const snap = await db.collection('users').get();
@@ -23,6 +24,7 @@ export async function syncAllMemberships() {
   let scanned = 0;
   let matched = 0;
   let updated = 0;
+  const changes = [];
 
   const MAX_BATCH_OPS = 500;
   let batch = db.batch();
@@ -35,6 +37,8 @@ export async function syncAllMemberships() {
       opCount = 0;
     }
   };
+
+  const fmtDate = (ms) => ms ? new Date(ms).toISOString().slice(0, 10) : null;
 
   for (const doc of snap.docs) {
     scanned++;
@@ -52,21 +56,29 @@ export async function syncAllMemberships() {
       ? user.membershipExpiry.toDate().getTime()
       : (user.membershipExpiry ? new Date(user.membershipExpiry).getTime() : null);
 
-    // อัปเดตเฉพาะเมื่อ tier หรือวันหมดอายุเปลี่ยนจริง
     if (curType === newType && curExpiryMs === newExpiryMs) continue;
 
-    if (opCount >= MAX_BATCH_OPS) await flushBatch();
-    batch.update(doc.ref, {
-      memberType: newType,
-      membershipExpiry: Timestamp.fromDate(membership.membershipExpiry),
-      updatedAt: FieldValue.serverTimestamp(),
+    changes.push({
+      uid: doc.id,
+      name: [user.nickname, user.firstName, user.lastName].filter(Boolean).join(' / '),
+      from: { memberType: curType, membershipExpiry: fmtDate(curExpiryMs) },
+      to:   { memberType: newType, membershipExpiry: fmtDate(newExpiryMs) },
     });
-    opCount++;
+
+    if (!dry) {
+      if (opCount >= MAX_BATCH_OPS) await flushBatch();
+      batch.update(doc.ref, {
+        memberType: newType,
+        membershipExpiry: Timestamp.fromDate(membership.membershipExpiry),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      opCount++;
+    }
     updated++;
   }
 
-  await flushBatch();
+  if (!dry) await flushBatch();
 
-  console.log(`[membership-sync] scanned=${scanned} matched=${matched} updated=${updated}`);
-  return { scanned, matched, updated };
+  console.log(`[membership-sync] dry=${dry} scanned=${scanned} matched=${matched} updated=${updated}`);
+  return { scanned, matched, updated, changes };
 }

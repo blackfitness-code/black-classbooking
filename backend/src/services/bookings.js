@@ -268,12 +268,12 @@ export async function cancelBooking(uid, bookingId) {
     throw new ApiError(400, 'Booking is not confirmed', 'NOT_CONFIRMED');
   }
 
-  // 3. Time window: ต้องมีเวลาเหลือ > 5 ชั่วโมง
+  // 3. Time window: ต้องมีเวลาเหลือ > 2 ชั่วโมง
   const classDateTime = new Date(`${booking.date}T${booking.time}:00`);
-  const FIVE_HOURS = 5 * 60 * 60 * 1000;
+  const TWO_HOURS = 2 * 60 * 60 * 1000;
 
-  if ((classDateTime - now) <= FIVE_HOURS) {
-    throw new ApiError(400, 'Cancel window has closed (< 5 hours before class)', 'CANCEL_WINDOW_CLOSED');
+  if ((classDateTime - now) <= TWO_HOURS) {
+    throw new ApiError(400, 'Cancel window has closed (< 2 hours before class)', 'CANCEL_WINDOW_CLOSED');
   }
 
   // Transaction: cancel + decrement (floor 0)

@@ -1,6 +1,6 @@
 {
   "name": "yoga-booking-liff",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "LINE LIFF Yoga Class Booking System",
   "private": true,
   "type": "module",
