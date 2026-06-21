@@ -46,16 +46,38 @@
             <h3 class="font-bold text-gray-900">ข้อมูลส่วนตัว</h3>
           </div>
 
+          <!-- Foreigner toggle -->
+          <div class="mb-5">
+            <button
+              type="button"
+              @click="isForeigner = !isForeigner"
+              class="w-full flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-left"
+            >
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="text-lg shrink-0">🌏</span>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-gray-700">ชาวต่างชาติ / Foreigner</p>
+                  <p class="text-xs text-gray-400">สำหรับผู้ที่ไม่มีบัตรประชาชนไทย</p>
+                </div>
+              </div>
+              <span :class="['relative w-10 h-6 rounded-full transition-colors shrink-0', isForeigner ? 'bg-primary' : 'bg-gray-300']">
+                <span :class="['absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform', isForeigner ? 'translate-x-4' : '']"></span>
+              </span>
+            </button>
+          </div>
+
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อเล่น <span class="text-red-400">*</span></label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                {{ isForeigner ? 'Nickname' : 'ชื่อเล่น' }} <span class="text-red-400">*</span>
+              </label>
               <input
                 v-model="form.nickname"
                 type="text"
                 required
                 data-field="nickname"
                 :class="inputClass('nickname')"
-                placeholder="ชื่อที่ต้องการให้เรียก"
+                :placeholder="isForeigner ? 'Your preferred name' : 'ชื่อที่ต้องการให้เรียก'"
               >
               <p v-if="errors.nickname" class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
                 <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
@@ -65,60 +87,68 @@
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อจริง <span class="text-red-400">*</span></label>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                  {{ isForeigner ? 'First Name' : 'ชื่อจริง' }} <span class="text-red-400">*</span>
+                </label>
                 <input
                   v-model="form.firstName"
                   type="text"
                   required
                   data-field="firstName"
                   :class="inputClass('firstName')"
-                  placeholder="ชื่อจริง"
+                  :placeholder="isForeigner ? 'First name' : 'ชื่อจริง'"
                 >
                 <p v-if="errors.firstName" class="text-red-500 text-xs mt-1.5">{{ errors.firstName }}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">นามสกุล <span class="text-red-400">*</span></label>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                  {{ isForeigner ? 'Last Name' : 'นามสกุล' }} <span class="text-red-400">*</span>
+                </label>
                 <input
                   v-model="form.lastName"
                   type="text"
                   required
                   data-field="lastName"
                   :class="inputClass('lastName')"
-                  placeholder="นามสกุล"
+                  :placeholder="isForeigner ? 'Last name' : 'นามสกุล'"
                 >
                 <p v-if="errors.lastName" class="text-red-500 text-xs mt-1.5">{{ errors.lastName }}</p>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1.5">เลขบัตรประชาชน <span class="text-red-400">*</span></label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                {{ isForeigner ? 'Passport No. / ID No.' : 'เลขบัตรประชาชน' }} <span class="text-red-400">*</span>
+              </label>
               <input
                 v-model="form.nationalId"
                 type="text"
-                inputmode="numeric"
-                maxlength="13"
+                :inputmode="isForeigner ? 'text' : 'numeric'"
+                :maxlength="isForeigner ? 20 : 13"
                 required
                 data-field="nationalId"
                 :class="[inputClass('nationalId'), 'tracking-[0.15em] font-medium']"
-                placeholder="เลข 13 หลัก"
+                :placeholder="isForeigner ? 'e.g. A12345678' : 'เลข 13 หลัก'"
               >
               <p v-if="errors.nationalId" class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
                 <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                 {{ errors.nationalId }}
               </p>
-              <p v-else class="text-gray-400 text-xs mt-1.5">{{ form.nationalId.length }}/13 หลัก</p>
+              <p v-else-if="!isForeigner" class="text-gray-400 text-xs mt-1.5">{{ form.nationalId.length }}/13 หลัก</p>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1.5">เบอร์โทรศัพท์</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                {{ isForeigner ? 'Phone Number' : 'เบอร์โทรศัพท์' }}
+              </label>
               <input
                 v-model="form.phone"
                 type="tel"
-                inputmode="numeric"
-                maxlength="12"
+                :inputmode="isForeigner ? 'tel' : 'numeric'"
+                :maxlength="isForeigner ? 20 : 12"
                 data-field="phone"
                 :class="inputClass('phone')"
-                placeholder="08X-XXX-XXXX"
+                :placeholder="isForeigner ? '+66 8X-XXX-XXXX' : '08X-XXX-XXXX'"
               >
               <p v-if="errors.phone" class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
                 <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
@@ -152,7 +182,7 @@
                       ? 'bg-primary text-white border-primary shadow-sm'
                       : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300']"
                 >
-                  {{ g.label }}
+                  {{ isForeigner ? g.labelEn : g.label }}
                 </button>
               </div>
             </div>
@@ -318,6 +348,14 @@ const authStore = useAuthStore()
 
 const submitting = ref(false)
 const errors = ref({})
+const isForeigner = ref(false)
+
+// reset nationalId เมื่อสลับ mode เพื่อป้องกัน format ผิด
+watch(isForeigner, () => {
+  form.nationalId = ''
+  form.phone = ''
+  errors.value = {}
+})
 
 // ข้อกำหนด / นโยบายความเป็นส่วนตัว (modal)
 const legalView = ref(null) // null | 'terms' | 'privacy'
@@ -389,9 +427,9 @@ const PRIVACY_HTML = `
 `
 
 const genders = [
-  { value: 'male', label: 'ชาย' },
-  { value: 'female', label: 'หญิง' },
-  { value: 'other', label: 'อื่นๆ' }
+  { value: 'male', label: 'ชาย', labelEn: 'Male' },
+  { value: 'female', label: 'หญิง', labelEn: 'Female' },
+  { value: 'other', label: 'อื่นๆ', labelEn: 'Other' }
 ]
 
 const form = reactive({
@@ -492,6 +530,9 @@ const isValidThaiId = (id) => {
   return (11 - (sum % 11)) % 10 === parseInt(id.charAt(12), 10)
 }
 
+// passport: อักขระ alphanumeric อย่างน้อย 5 ตัว
+const isValidPassport = (val) => /^[A-Za-z0-9]{5,20}$/.test((val || '').trim())
+
 // เบอร์โทรไทย: 10 หลัก ขึ้นต้นด้วย 0 (มือถือ/บ้าน)
 const phoneDigits = (val) => (val || '').replace(/\D/g, '').slice(0, 10)
 const isValidThaiPhone = (val) => /^0\d{9}$/.test(phoneDigits(val))
@@ -502,6 +543,9 @@ const formatThaiPhone = (val) => {
   if (d.length <= 6) return `${d.slice(0, 3)}-${d.slice(3)}`
   return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`
 }
+// เบอร์ต่างชาติ: เก็บตัวเลขกับ + เท่านั้น อย่างน้อย 7 หลัก
+const intlPhoneDigits = (val) => (val || '').replace(/[^\d+]/g, '').slice(0, 20)
+const isValidIntlPhone = (val) => (val || '').replace(/\D/g, '').length >= 7
 
 // ตรวจทีละฟิลด์ระหว่างพิมพ์ (เตือนทันที)
 const validateField = (field) => {
@@ -509,23 +553,31 @@ const validateField = (field) => {
     case 'nickname':
     case 'firstName':
     case 'lastName':
-      if (form[field] && !isThaiText(form[field])) {
+      if (!isForeigner.value && form[field] && !isThaiText(form[field])) {
         errors.value[field] = 'กรุณากรอกเป็นภาษาไทยเท่านั้น'
       } else {
         delete errors.value[field]
       }
       break
     case 'nationalId':
-      // เตือนเฉพาะตอนครบ 13 หลักแล้วแต่ checksum ไม่ผ่าน (ระหว่างพิมพ์ใช้ตัวนับหลักแทน)
-      if (form.nationalId.length === 13 && !isValidThaiId(form.nationalId)) {
-        errors.value.nationalId = 'เลขบัตรประชาชนไม่ถูกต้อง'
+      if (isForeigner.value) {
+        if (form.nationalId && !isValidPassport(form.nationalId)) {
+          errors.value.nationalId = 'Please enter a valid passport/ID number (5–20 characters)'
+        } else {
+          delete errors.value.nationalId
+        }
       } else {
-        delete errors.value.nationalId
+        if (form.nationalId.length === 13 && !isValidThaiId(form.nationalId)) {
+          errors.value.nationalId = 'เลขบัตรประชาชนไม่ถูกต้อง'
+        } else {
+          delete errors.value.nationalId
+        }
       }
       break
     case 'phone':
-      // เตือนเฉพาะตอนครบ 10 หลักแต่รูปแบบไม่ถูก (ระหว่างพิมพ์ปล่อยให้กรอกต่อ)
-      if (phoneDigits(form.phone).length === 10 && !isValidThaiPhone(form.phone)) {
+      if (isForeigner.value) {
+        delete errors.value.phone
+      } else if (phoneDigits(form.phone).length === 10 && !isValidThaiPhone(form.phone)) {
         errors.value.phone = 'เบอร์โทรไม่ถูกต้อง'
       } else {
         delete errors.value.phone
@@ -549,11 +601,15 @@ const inputClass = (field) => [
 
 // % ความคืบหน้าของฟิลด์ที่จำเป็น
 const completion = computed(() => {
+  const nameValid = (v) => isForeigner.value ? !!v.trim() : (!!v.trim() && isThaiText(v))
+  const idValid = isForeigner.value
+    ? isValidPassport(form.nationalId)
+    : isValidThaiId(form.nationalId.trim())
   const checks = [
-    !!form.nickname.trim() && isThaiText(form.nickname),
-    !!form.firstName.trim() && isThaiText(form.firstName),
-    !!form.lastName.trim() && isThaiText(form.lastName),
-    isValidThaiId(form.nationalId.trim()),
+    nameValid(form.nickname),
+    nameValid(form.firstName),
+    nameValid(form.lastName),
+    idValid,
     form.acceptTerms,
     form.acceptRisk
   ]
@@ -563,34 +619,47 @@ const completion = computed(() => {
 const validateForm = () => {
   errors.value = {}
 
-  // Required fields validation
+  const foreign = isForeigner.value
+
+  // nickname
   if (!form.nickname.trim()) {
-    errors.value.nickname = 'กรุณากรอกชื่อเล่น'
-  } else if (!isThaiText(form.nickname)) {
+    errors.value.nickname = foreign ? 'Please enter your nickname' : 'กรุณากรอกชื่อเล่น'
+  } else if (!foreign && !isThaiText(form.nickname)) {
     errors.value.nickname = 'กรุณากรอกเป็นภาษาไทยเท่านั้น'
   }
 
+  // firstName
   if (!form.firstName.trim()) {
-    errors.value.firstName = 'กรุณากรอกชื่อจริง'
-  } else if (!isThaiText(form.firstName)) {
+    errors.value.firstName = foreign ? 'Please enter your first name' : 'กรุณากรอกชื่อจริง'
+  } else if (!foreign && !isThaiText(form.firstName)) {
     errors.value.firstName = 'กรุณากรอกเป็นภาษาไทยเท่านั้น'
   }
 
+  // lastName
   if (!form.lastName.trim()) {
-    errors.value.lastName = 'กรุณากรอกนามสกุล'
-  } else if (!isThaiText(form.lastName)) {
+    errors.value.lastName = foreign ? 'Please enter your last name' : 'กรุณากรอกนามสกุล'
+  } else if (!foreign && !isThaiText(form.lastName)) {
     errors.value.lastName = 'กรุณากรอกเป็นภาษาไทยเท่านั้น'
   }
 
+  // ID / Passport
   if (!form.nationalId.trim()) {
-    errors.value.nationalId = 'กรุณากรอกเลขบัตรประชาชน'
-  } else if (!isValidThaiId(form.nationalId.trim())) {
+    errors.value.nationalId = foreign ? 'Please enter your passport/ID number' : 'กรุณากรอกเลขบัตรประชาชน'
+  } else if (foreign && !isValidPassport(form.nationalId)) {
+    errors.value.nationalId = 'Please enter a valid passport/ID number (5–20 alphanumeric characters)'
+  } else if (!foreign && !isValidThaiId(form.nationalId.trim())) {
     errors.value.nationalId = 'เลขบัตรประชาชนไม่ถูกต้อง'
   }
 
   // เบอร์โทร: ไม่บังคับ แต่ถ้ากรอกต้องถูกต้อง
-  if (form.phone.trim() && !isValidThaiPhone(form.phone)) {
-    errors.value.phone = 'เบอร์โทรไม่ถูกต้อง (10 หลัก ขึ้นต้นด้วย 0)'
+  if (foreign) {
+    if (form.phone.trim() && !isValidIntlPhone(form.phone)) {
+      errors.value.phone = 'Please enter a valid phone number (at least 7 digits)'
+    }
+  } else {
+    if (form.phone.trim() && !isValidThaiPhone(form.phone)) {
+      errors.value.phone = 'เบอร์โทรไม่ถูกต้อง (10 หลัก ขึ้นต้นด้วย 0)'
+    }
   }
 
   if (form.emergencyContact.hasContact && form.emergencyContact.phone.trim() && !isValidThaiPhone(form.emergencyContact.phone)) {
@@ -598,11 +667,11 @@ const validateForm = () => {
   }
 
   if (!form.acceptTerms) {
-    errors.value.acceptTerms = 'กรุณายอมรับข้อกำหนดและเงื่อนไข'
+    errors.value.acceptTerms = foreign ? 'Please accept the terms and conditions' : 'กรุณายอมรับข้อกำหนดและเงื่อนไข'
   }
 
   if (!form.acceptRisk) {
-    errors.value.acceptRisk = 'กรุณายอมรับความเสี่ยงในการเล่นโยคะ'
+    errors.value.acceptRisk = foreign ? 'Please accept the exercise risk disclaimer' : 'กรุณายอมรับความเสี่ยงในการเล่นโยคะ'
   }
 
   return Object.keys(errors.value).length === 0
@@ -629,22 +698,26 @@ watch(() => form.nickname, () => validateField('nickname'))
 watch(() => form.firstName, () => validateField('firstName'))
 watch(() => form.lastName, () => validateField('lastName'))
 
-// เลขบัตร: รับเฉพาะตัวเลข สูงสุด 13 หลัก + เตือนทันที
+// เลขบัตร: foreigner → alphanumeric uppercase, Thai → digits only 13 หลัก
 watch(() => form.nationalId, (val) => {
-  const digits = (val || '').replace(/\D/g, '').slice(0, 13)
-  if (digits !== val) {
-    form.nationalId = digits
-    return // watcher จะรันซ้ำหลังแก้ค่า แล้วค่อย validate
+  if (isForeigner.value) {
+    const clean = (val || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 20)
+    if (clean !== val) { form.nationalId = clean; return }
+  } else {
+    const digits = (val || '').replace(/\D/g, '').slice(0, 13)
+    if (digits !== val) { form.nationalId = digits; return }
   }
   validateField('nationalId')
 })
 
-// เบอร์โทร: รับเฉพาะตัวเลข + จัดรูปแบบ 0XX-XXX-XXXX แล้วค่อย validate
+// เบอร์โทร: foreigner → เก็บ +/digits เท่านั้น, ไทย → auto-format 0XX-XXX-XXXX
 watch(() => form.phone, (val) => {
-  const formatted = formatThaiPhone(val)
-  if (formatted !== val) {
-    form.phone = formatted
-    return // watcher จะรันซ้ำหลังแก้ค่า แล้วค่อย validate
+  if (isForeigner.value) {
+    const clean = intlPhoneDigits(val)
+    if (clean !== val) { form.phone = clean; return }
+  } else {
+    const formatted = formatThaiPhone(val)
+    if (formatted !== val) { form.phone = formatted; return }
   }
   validateField('phone')
 })
@@ -717,7 +790,7 @@ const submitProfile = async () => {
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       nationalId: form.nationalId.trim(),
-      phone: phoneDigits(form.phone),
+      phone: isForeigner.value ? form.phone.trim() : phoneDigits(form.phone),
       birthDate: birthDateToISO(form.birthDate),
       gender: form.gender,
       healthIssues: form.healthIssues.trim(),
