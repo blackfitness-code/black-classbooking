@@ -140,13 +140,15 @@ const qrBooking = ref(null)
 const bookingDateTime = (b) => new Date(`${b.date}T${b.time || '00:00'}:00`)
 
 // Upcoming confirmed bookings within the current calendar month
+// แสดงคลาสที่ยังไม่เริ่ม + คลาสที่เพิ่งเริ่มภายใน 2 ชั่วโมง (เพื่อให้สแกน QR ได้หลังคลาสเริ่ม)
+const CHECKIN_WINDOW_MS = 15 * 60 * 1000
 const upcoming = computed(() => {
   const now = new Date()
   return bookings.value
     .filter(b => b.status === 'confirmed')
     .filter(b => {
       const dt = bookingDateTime(b)
-      return dt >= now && isSameMonth(dt, now)
+      return dt >= now - CHECKIN_WINDOW_MS && isSameMonth(dt, now)
     })
     .sort((a, b) => bookingDateTime(a) - bookingDateTime(b))
     .slice(0, props.limit)
