@@ -149,8 +149,10 @@ export async function createBooking(uid, classId) {
 
   // 5b. No-show block: หา booking ล่าสุดของคลาสชื่อเดียวกันที่ผ่านมาแล้ว (date < today)
   //     ถ้าไม่มี check-in สำหรับ booking นั้น และคลาสที่จะจองนี้คือรอบแรกหลัง no-show → block
+  //     นับเฉพาะ booking ตั้งแต่วันที่ระบบเริ่มใช้งานจริง (22 มิ.ย. 2026) เป็นต้นไป
+  const SYSTEM_START_DATE = '2026-06-22';
   const pastSameClassBookings = allUserBookings
-    .filter((b) => b.className === cls.name && b.status !== 'cancelled' && b.date < today)
+    .filter((b) => b.className === cls.name && b.status !== 'cancelled' && b.date < today && b.date >= SYSTEM_START_DATE)
     .sort((a, b) => b.date.localeCompare(a.date)); // ล่าสุดก่อน
 
   if (pastSameClassBookings.length > 0) {
