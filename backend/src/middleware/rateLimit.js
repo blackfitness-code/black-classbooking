@@ -11,10 +11,13 @@
 import { rateLimit } from 'express-rate-limit';
 
 export const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300,
-  standardHeaders: 'draft-7', // Return RateLimit-* headers (RFC draft-7)
+  windowMs: 15 * 60 * 1000,
+  max: 2000, // ~130 req/user สำหรับ 15 คนพร้อมกัน
+  standardHeaders: 'draft-7',
   legacyHeaders: false,
+  // key by LINE uid ถ้ามี (จาก JWT) ไม่งั้น fallback IP
+  // ป้องกัน shared-WiFi นับรวมทุกคนเป็น IP เดียว
+  keyGenerator: (req) => req.user?.uid || req.ip,
   message: {
     error: {
       message: 'Too many requests, please try again later.',
@@ -24,8 +27,8 @@ export const apiLimiter = rateLimit({
 });
 
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // stricter: 20 attempts per window
+  windowMs: 15 * 60 * 1000,
+  max: 500, // /auth/line เรียกทุกครั้งที่เปิดแอป — shared WiFi ต้องสูง
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: {
