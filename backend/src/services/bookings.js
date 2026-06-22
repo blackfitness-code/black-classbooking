@@ -238,7 +238,7 @@ export async function createBooking(uid, classId) {
  *  1. booking exists
  *  2. booking.userId === uid (NOT_OWNER)
  *  3. status === 'confirmed' (NOT_CONFIRMED)
- *  4. (classDateTime - now) > 5h (CANCEL_WINDOW_CLOSED)
+ *  4. (classDateTime - now) > 2h (CANCEL_WINDOW_CLOSED)
  *
  * Transaction: set cancelled + cancelledAt, decrement currentBookings (floor 0)
  *

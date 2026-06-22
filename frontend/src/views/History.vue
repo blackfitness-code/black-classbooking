@@ -120,7 +120,7 @@
             <h3 class="text-lg font-semibold text-gray-900 mb-1">ยืนยันการยกเลิก</h3>
             <p class="text-sm text-gray-600 mb-2">คุณแน่ใจหรือไม่ที่จะยกเลิกการจองนี้?</p>
             <p class="text-xs text-orange-600 leading-relaxed">
-              หมายเหตุ: สามารถยกเลิกได้เฉพาะก่อน 5 ชั่วโมงก่อนคลาสเริ่มเท่านั้น
+              หมายเหตุ: สามารถยกเลิกได้เฉพาะก่อน 2 ชั่วโมงก่อนคลาสเริ่มเท่านั้น
             </p>
           </div>
           
@@ -231,9 +231,9 @@ const canCancel = (booking) => {
   const now = new Date()
   const bookingDate = new Date(`${booking.date}T${booking.time}:00`)
   
-  // Can cancel only if more than 5 hours before class starts
+  // Can cancel only if more than 2 hours before class starts
   const hoursDiff = (bookingDate - now) / (1000 * 60 * 60)
-  return hoursDiff > 5
+  return hoursDiff > 2
 }
 
 const getCancelReasonText = (booking) => {
@@ -243,7 +243,7 @@ const getCancelReasonText = (booking) => {
   
   if (hoursDiff <= 0) {
     return 'คลาสเริ่มแล้ว'
-  } else if (hoursDiff <= 5) {
+  } else if (hoursDiff <= 2) {
     const hoursLeft = Math.floor(hoursDiff)
     const minutesLeft = Math.floor((hoursDiff - hoursLeft) * 60)
     return `ไม่สามารถยกเลิกได้ (เหลือเวลา ${hoursLeft} ชม. ${minutesLeft} นาที)`
@@ -284,7 +284,7 @@ const confirmCancel = async () => {
     console.error('Error cancelling booking:', err)
     // แปลง error code จาก server เป็นข้อความภาษาไทย
     const msgMap = {
-      CANCEL_WINDOW_CLOSED: 'ไม่สามารถยกเลิกได้แล้ว (เหลือเวลาน้อยกว่า 5 ชม.)',
+      CANCEL_WINDOW_CLOSED: 'ไม่สามารถยกเลิกได้แล้ว (เหลือเวลาน้อยกว่า 2 ชม.)',
       NOT_OWNER: 'ไม่ใช่การจองของคุณ',
       NOT_CONFIRMED: 'การจองนี้ยกเลิกไม่ได้'
     }
