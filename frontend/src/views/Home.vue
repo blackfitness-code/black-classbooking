@@ -64,6 +64,7 @@
           :membership-expiry="authStore.userProfile?.membershipExpiry"
           :member-type="authStore.userProfile?.memberType || ''"
           :member-id="authStore.userProfile?.lineUserId || liffStore.profile?.userId"
+          :hide-expiry="authStore.isAdmin || authStore.isStaff"
           @image-error="handleImageError"
           @refresh="refreshProfile"
         />

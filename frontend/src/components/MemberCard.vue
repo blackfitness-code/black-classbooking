@@ -80,7 +80,7 @@
               <p :class="statusTextClass" class="text-sm font-semibold">{{ statusLabel }}</p>
             </div>
           </div>
-          <div v-if="!isPending" class="text-right">
+          <div v-if="!isPending && !hideExpiry" class="text-right">
             <p :class="cfg.label" class="text-[10px] tracking-wider uppercase mb-1">หมดอายุ</p>
             <p :class="cfg.name" class="text-sm font-semibold">{{ expiryLine }}</p>
           </div>
@@ -101,7 +101,8 @@ const props = defineProps({
   profilePictureUrl: String,
   membershipExpiry: [Date, String, Object],
   memberType: { type: String, default: '' }, // '' = pending | 'gold' | 'platinum'
-  memberId: String
+  memberId: String,
+  hideExpiry: { type: Boolean, default: false }
 })
 
 defineEmits(['image-error', 'refresh'])

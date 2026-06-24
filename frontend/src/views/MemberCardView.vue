@@ -32,6 +32,7 @@
         :membership-expiry="member.membershipExpiry"
         :member-type="member.memberType || ''"
         :member-id="member.lineUserId"
+        :hide-expiry="member.role === 'admin' || member.role === 'staff'"
       />
     </div>
   </div>
