@@ -8,6 +8,20 @@
       <input v-model="searchQuery" type="text" placeholder="ค้นหา..." class="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
     </div>
 
+    <!-- filter chips -->
+    <div class="flex gap-2 mb-3 flex-wrap">
+      <button
+        @click="filterMode = filterMode === 'no-package' ? '' : 'no-package'"
+        :class="filterMode === 'no-package'
+          ? 'bg-orange-500 text-white'
+          : 'bg-white text-gray-600 border border-gray-200'"
+        class="px-3 py-1 rounded-full text-xs font-semibold transition-colors"
+      >
+        มีวันหมด / ไม่มี package
+        <span v-if="noPackageCount" class="ml-1 opacity-80">({{ noPackageCount }})</span>
+      </button>
+    </div>
+
     <div v-if="loading" class="space-y-3">
       <div v-for="i in 3" :key="i" class="bg-white rounded-2xl p-4 border border-gray-100">
         <div class="h-5 w-2/3 bg-gray-100 rounded animate-pulse"></div>
@@ -30,6 +44,7 @@
           <div class="text-right shrink-0">
             <span v-if="user.role === 'admin'" class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded">Admin</span>
             <span v-else-if="user.role === 'staff'" class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">Staff</span>
+            <span v-else-if="hasExpiryNoPackage(user)" class="px-2 py-0.5 bg-orange-100 text-orange-600 text-xs font-semibold rounded">ไม่มี package</span>
             <p :class="['text-xs font-medium', isExpired(user.membershipExpiry) ? 'text-red-600' : 'text-emerald-600']">
               {{ formatExpiry(user.membershipExpiry) }}
             </p>
@@ -56,11 +71,21 @@ const props = defineProps({
 defineEmits(['edit-user'])
 
 const searchQuery = ref('')
+const filterMode = ref('')
+
+const hasExpiryNoPackage = (u) =>
+  !!u.membershipExpiry && !u.memberType && u.role !== 'admin' && u.role !== 'staff'
+
+const noPackageCount = computed(() => props.users?.filter(hasExpiryNoPackage).length ?? 0)
 
 const filteredUsers = computed(() => {
-  if (!searchQuery.value) return props.users
+  let list = props.users ?? []
+  if (filterMode.value === 'no-package') {
+    list = list.filter(hasExpiryNoPackage)
+  }
+  if (!searchQuery.value) return list
   const q = searchQuery.value.toLowerCase()
-  return props.users.filter(u => 
+  return list.filter(u =>
     u.nickname?.toLowerCase().includes(q) ||
     u.displayName?.toLowerCase().includes(q) ||
     u.firstName?.toLowerCase().includes(q) ||
