@@ -81,9 +81,9 @@ export async function createCheckin({ uid, classId, bookingId, date }, staffUid)
   const userSnap = await db.collection('users').doc(uid).get();
   const user = userSnap.exists ? userSnap.data() : {};
 
-  // membershipValid: ตรวจ expiry
-  let membershipValid = false;
-  if (user.membershipExpiry) {
+  // membershipValid: admin/staff ถือว่า valid เสมอ
+  let membershipValid = user.role === 'admin' || user.role === 'staff';
+  if (!membershipValid && user.membershipExpiry) {
     const expiry = typeof user.membershipExpiry.toDate === 'function'
       ? user.membershipExpiry.toDate()
       : new Date(user.membershipExpiry);

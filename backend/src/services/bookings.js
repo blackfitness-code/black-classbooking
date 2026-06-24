@@ -86,15 +86,17 @@ export async function createBooking(uid, classId) {
   }
   const user = userSnap.data();
 
-  // 1. Membership validity
-  if (!user.membershipExpiry) {
-    throw new ApiError(403, 'Membership expired or not set', 'MEMBERSHIP_EXPIRED');
-  }
-  const expiry = typeof user.membershipExpiry.toDate === 'function'
-    ? user.membershipExpiry.toDate()
-    : new Date(user.membershipExpiry);
-  if (expiry <= now) {
-    throw new ApiError(403, 'Membership expired', 'MEMBERSHIP_EXPIRED');
+  // 1. Membership validity (admin/staff ไม่ต้องตรวจ)
+  if (user.role !== 'admin' && user.role !== 'staff') {
+    if (!user.membershipExpiry) {
+      throw new ApiError(403, 'Membership expired or not set', 'MEMBERSHIP_EXPIRED');
+    }
+    const expiry = typeof user.membershipExpiry.toDate === 'function'
+      ? user.membershipExpiry.toDate()
+      : new Date(user.membershipExpiry);
+    if (expiry <= now) {
+      throw new ApiError(403, 'Membership expired', 'MEMBERSHIP_EXPIRED');
+    }
   }
 
   // 2. Cooldown check

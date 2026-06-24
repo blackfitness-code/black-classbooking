@@ -155,6 +155,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     isMembershipValid() {
+      if (this.isAdmin || this.isStaff) return true
       if (!this.userProfile?.membershipExpiry) return false
 
       try {
