@@ -52,39 +52,23 @@ export async function getUserByLineId(lineUserId) {
 }
 
 // ---------------------------------------------------------------------------
-// upsertUserIdentity
+// lookupUserIdentity
 // ---------------------------------------------------------------------------
 /**
- * สร้างหรืออัปเดต user identity จาก LINE login
- * ถ้า doc ยังไม่มี → สร้างใหม่ (role: 'user', profileCompleted: false)
- * ถ้ามีแล้ว → sync displayName/pictureUrl ถ้าเปลี่ยน
+ * ตรวจสอบ user จาก LINE login โดย **ไม่สร้าง doc ใหม่**
+ * - ถ้ามี doc อยู่แล้ว → sync displayName/pictureUrl ถ้าเปลี่ยน แล้วคืน doc
+ * - ถ้ายังไม่มี doc → คืน null (user จะถูกสร้างตอน PUT /me ครั้งแรก)
  *
  * @param {{ lineUserId: string, displayName: string, pictureUrl: string }} identity
- * @returns {Promise<{ id: string, needsProfileSetup: boolean, [key: string]: any }>}
+ * @returns {Promise<{ id: string, needsProfileSetup: boolean, [key: string]: any } | null>}
  */
-export async function upsertUserIdentity({ lineUserId, displayName, pictureUrl }) {
+export async function lookupUserIdentity({ lineUserId, displayName, pictureUrl }) {
   const docRef = db.collection('users').doc(lineUserId);
   const snap = await docRef.get();
 
-  if (!snap.exists) {
-    // สร้าง user ใหม่
-    const newUser = {
-      lineUserId,
-      displayName,
-      pictureUrl,
-      role: 'user',
-      profileCompleted: false,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-    await docRef.set(newUser);
+  if (!snap.exists) return null;
 
-    // อ่านกลับเพื่อให้ได้ serverTimestamp จริง
-    const created = await docRef.get();
-    return { id: created.id, ...created.data(), needsProfileSetup: true };
-  }
-
-  // อัปเดตเฉพาะ field ที่อาจเปลี่ยน (display info จาก LINE)
+  // sync display info จาก LINE ถ้าเปลี่ยน
   const data = snap.data();
   const updates = {};
 
@@ -140,13 +124,22 @@ export async function updateProfile(lineUserId, profileData) {
 
   const docRef = db.collection('users').doc(lineUserId);
 
-  // ตรวจสอบว่า user มีอยู่จริง
   const snap = await docRef.get();
+
+  // ถ้ายังไม่มี doc → สร้างใหม่ (กรณี first-time profile submit)
   if (!snap.exists) {
-    throw new ApiError(404, 'User not found', 'USER_NOT_FOUND');
+    const now = FieldValue.serverTimestamp();
+    const baseUser = {
+      lineUserId,
+      role: 'user',
+      profileCompleted: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await docRef.set(baseUser);
   }
 
-  const existing = snap.data();
+  const existing = snap.exists ? snap.data() : {};
   const wasCompleted = existing.profileCompleted === true;
   safeData.profileCompleted = true;
   safeData.updatedAt = FieldValue.serverTimestamp();

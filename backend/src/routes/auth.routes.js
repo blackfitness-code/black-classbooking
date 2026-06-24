@@ -15,7 +15,7 @@ import { ApiError } from '../middleware/errorHandler.js';
 import { isProd } from '../config/env.js';
 
 import { verifyLineIdToken } from '../services/line.js';
-import { upsertUserIdentity, getUserByLineId, serializeUser } from '../services/users.js';
+import { lookupUserIdentity, getUserByLineId, serializeUser } from '../services/users.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../services/token.js';
 
 const router = Router();
@@ -65,18 +65,33 @@ router.post('/line', validate(lineBodySchema), async (req, res, next) => {
       throw new ApiError(400, 'idToken is required', 'MISSING_ID_TOKEN');
     }
 
-    // upsert user ใน Firestore
-    const userWithFlag = await upsertUserIdentity(identity);
-    const { needsProfileSetup, ...userDoc } = userWithFlag;
+    // ค้นหา user ใน Firestore โดย **ไม่สร้าง doc** — doc จะสร้างตอน PUT /me เท่านั้น
+    const existing = await lookupUserIdentity(identity);
 
-    // ออก tokens
-    const accessToken = signAccessToken({ uid: userDoc.id, role: userDoc.role });
-    const refreshToken = signRefreshToken({ uid: userDoc.id });
+    let uid, role, userPayload, needsProfileSetup;
+
+    if (existing) {
+      const { needsProfileSetup: nps, ...userDoc } = existing;
+      uid = userDoc.id;
+      role = userDoc.role;
+      userPayload = serializeUser(userDoc);
+      needsProfileSetup = nps;
+    } else {
+      // User ใหม่ที่ยังไม่เคย submit profile
+      uid = identity.lineUserId;
+      role = 'user';
+      userPayload = null;
+      needsProfileSetup = true;
+    }
+
+    // ออก tokens (ใช้ lineUserId เป็น uid เสมอ)
+    const accessToken = signAccessToken({ uid, role });
+    const refreshToken = signRefreshToken({ uid });
 
     res.json({
       accessToken,
       refreshToken,
-      user: serializeUser(userDoc),
+      user: userPayload,
       needsProfileSetup,
     });
   } catch (err) {
@@ -94,17 +109,16 @@ router.post('/refresh', validate(refreshBodySchema), async (req, res, next) => {
     // ตรวจสอบ refresh token
     const payload = verifyRefreshToken(refreshToken);
 
-    // ดึง user ปัจจุบันเพื่อให้ได้ role ล่าสุด
+    // ดึง user ปัจจุบันเพื่อให้ได้ role ล่าสุด (อาจยังไม่มีใน DB ถ้ายังไม่ submit profile)
     const user = await getUserByLineId(payload.uid);
-    if (!user) {
-      throw new ApiError(401, 'User not found', 'USER_NOT_FOUND');
-    }
+    const uid = payload.uid;
+    const role = user?.role ?? 'user';
 
     // ออก access token ใหม่
-    const newAccessToken = signAccessToken({ uid: user.id, role: user.role });
+    const newAccessToken = signAccessToken({ uid, role });
 
     // Rotate refresh token ด้วย (optional แต่ดี)
-    const newRefreshToken = signRefreshToken({ uid: user.id });
+    const newRefreshToken = signRefreshToken({ uid });
 
     res.json({
       accessToken: newAccessToken,
