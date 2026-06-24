@@ -44,8 +44,7 @@
           <div class="text-right shrink-0">
             <span v-if="user.role === 'admin'" class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded">Admin</span>
             <span v-else-if="user.role === 'staff'" class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">Staff</span>
-            <span v-else-if="hasExpiryNoPackage(user)" class="px-2 py-0.5 bg-orange-100 text-orange-600 text-xs font-semibold rounded">ไม่มี package</span>
-            <p :class="['text-xs font-medium', isExpired(user.membershipExpiry) ? 'text-red-600' : 'text-emerald-600']">
+<p :class="['text-xs font-medium', isExpired(user.membershipExpiry) ? 'text-red-600' : 'text-emerald-600']">
               {{ formatExpiry(user.membershipExpiry) }}
             </p>
           </div>
