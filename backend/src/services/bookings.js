@@ -12,6 +12,16 @@ import { ApiError } from '../middleware/errorHandler.js';
 
 const { FieldValue } = admin.firestore;
 
+// แปลง date (YYYY-MM-DD) + time (HH:MM) ที่เป็นเวลาไทย (UTC+7) เป็น Date object
+function thaiDateTime(date, time) {
+  return new Date(`${date}T${time}:00+07:00`);
+}
+
+// คืน "วันนี้" ในเวลาไทย (YYYY-MM-DD)
+function thaiToday() {
+  return new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().split('T')[0];
+}
+
 // ---------------------------------------------------------------------------
 // Helper: serialize Timestamp fields ให้เป็น ISO string
 // ---------------------------------------------------------------------------
@@ -121,8 +131,8 @@ export async function createBooking(uid, classId) {
   }
   const cls = classSnap.data();
 
-  // 4. Time window: classDateTime จาก date + time fields
-  const classDateTime = new Date(`${cls.date}T${cls.time}:00`);
+  // 4. Time window: classDateTime จาก date + time fields (Thai time UTC+7)
+  const classDateTime = thaiDateTime(cls.date, cls.time);
   const diffMs = classDateTime - now;
   const THIRTY_MIN = 30 * 60 * 1000;
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
@@ -132,7 +142,7 @@ export async function createBooking(uid, classId) {
   }
 
   // 5. Dup check + No-show check: query userId (single-field index) แล้ว filter ใน memory
-  const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  const today = thaiToday(); // YYYY-MM-DD in Thai timezone
 
   const userBookingsSnap = await db
     .collection('bookings')
@@ -271,7 +281,7 @@ export async function cancelBooking(uid, bookingId) {
   }
 
   // 3. Time window: ต้องมีเวลาเหลือ > 2 ชั่วโมง
-  const classDateTime = new Date(`${booking.date}T${booking.time}:00`);
+  const classDateTime = thaiDateTime(booking.date, booking.time);
   const TWO_HOURS = 2 * 60 * 60 * 1000;
 
   if ((classDateTime - now) <= TWO_HOURS) {

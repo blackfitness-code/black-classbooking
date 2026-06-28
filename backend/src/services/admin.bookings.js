@@ -59,7 +59,7 @@ export async function adminCreateBooking({ classId, userId }) {
     const cls = classDoc.data();
     const current = cls.currentBookings ?? 0;
 
-    const classDateTime = new Date(`${cls.date}T${cls.time}:00`);
+    const classDateTime = new Date(`${cls.date}T${cls.time}:00+07:00`);
 
     // Build booking doc (ตาม Admin.vue confirmAddMembers addDoc shape)
     const bookingData = {
